@@ -1,12 +1,6 @@
 from enum import Enum
 
 
-class UserGenders(Enum):
-    MALE = "M"
-    FEMALE = "F"
-    OTHER = "O"
-
-
 class UserRoles(Enum):
     PATIENT = "PATIENT"
     THERAPIST = "THERAPIST"
