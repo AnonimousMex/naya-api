@@ -8,7 +8,7 @@ from .user_schema import UserCreateSchema
 
 from app.constants.user_constants import UserRoles
 from app.utils.security import get_password_hash
-from app.core.http_response import MindfultHttpResponse
+from app.core.http_response import NayaHttpResponse
 
 
 class UserService:
@@ -31,7 +31,7 @@ class UserService:
 
             return new_user
         except Exception:
-            MindfultHttpResponse.internal_error()
+            NayaHttpResponse.internal_error()
 
     @staticmethod
     async def get_user_by_id(user_id: UUID, session: Session) -> UserModel:
@@ -40,7 +40,7 @@ class UserService:
             user = session.exec(statement).first()
             return user
         except Exception:
-            MindfultHttpResponse.internal_error()
+            NayaHttpResponse.internal_error()
 
     @staticmethod
     async def get_user_by_email(email: str, session: Session) -> UserModel | bool:
@@ -51,7 +51,7 @@ class UserService:
 
             return user if user else False
         except Exception as e:
-            MindfultHttpResponse.internal_error()
+            NayaHttpResponse.internal_error()
 
     @staticmethod
     async def verify_user(user_id: UUID, session: Session):
@@ -65,7 +65,7 @@ class UserService:
             session.add(user)
             session.commit()
         except Exception:
-            MindfultHttpResponse.internal_error()
+            NayaHttpResponse.internal_error()
 
     @staticmethod
     async def update_user_password(user_id: UUID, password: str, session: Session):
@@ -80,4 +80,4 @@ class UserService:
             session.add(user)
             session.commit()
         except Exception:
-            MindfultHttpResponse.internal_error()
+            NayaHttpResponse.internal_error()

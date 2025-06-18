@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.utils.regex import Regex
 
-from app.core.http_response import MindfultHttpResponse
+from app.core.http_response import NayaHttpResponse
 from app.constants.response_codes import MindfulResponseCodes
 
 
@@ -23,7 +23,7 @@ class PasswordValidationMixin(BaseModel):
     @model_validator(mode="after")
     def passwords_match(self) -> "PasswordValidationMixin":
         if self.password != self.confirm_password:
-            MindfultHttpResponse.forbidden(
+            NayaHttpResponse.forbidden(
                 data={
                     "message": MindfulResponseCodes.INVALID_PASSWORDS_MATCH.detail,
                 },
