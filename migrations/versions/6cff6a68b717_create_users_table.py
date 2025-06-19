@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+import sqlmodel
 
 
 # revision identifiers, used by Alembic.
@@ -21,14 +22,14 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     op.create_table('users',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(length=20), nullable=False),
-    sa.Column('email', sa.String(length=40), nullable=False),
-    sa.Column('password', sa.String(), nullable=False),
+    sa.Column("id", sa.Uuid(), nullable=False),
+    sa.Column("name", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
+    sa.Column("email", sqlmodel.sql.sqltypes.AutoString(length=40), nullable=False),
+    sa.Column("password", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_verified', sa.Boolean(), server_default='false', nullable=False),
     sa.Column(
            "user_kind",
-           sa.Enum("PATIENT", "THERAPIST", name="userroles"),
+           sa.Enum("PATIENT", "THERAPIST", name="userroles2"),
            nullable=False,
        ),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
@@ -41,4 +42,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     op.drop_table('users')
-    pass
