@@ -9,6 +9,9 @@ from sqlmodel import SQLModel
 from app.core.settings import settings
 
 from app.api.users.user_model import UserModel
+from app.api.animals.animal_model import AnimalModel
+from app.api.patients.patient_model import PatientModel
+
 
 database_url = settings.DATABASE_URL
 
