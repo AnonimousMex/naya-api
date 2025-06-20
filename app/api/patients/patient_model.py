@@ -1,6 +1,8 @@
 from typing import Optional
 from uuid import UUID
+
 from sqlmodel import Field, Relationship
+
 from app.core.base_model import BaseNayaModel
 
 
@@ -9,6 +11,9 @@ class PatientModel(BaseNayaModel, table=True):
 
     user_id: UUID = Field(default=None, foreign_key="users.id")
     is_connected: bool = Field(default=False)
-    animal_id: Optional[UUID]= Field(default=None )
-    
-    user: "UserModel" = Relationship(back_populates="patient")  # type: ignore
+    animal_id: Optional[UUID] = Field(default=None)
+
+    user: "UserModel" = Relationship(
+        back_populates="patient",
+        sa_relationship_kwargs={"foreign_keys": "[PatientModel.user_id]"},
+    )  # type: ignore
