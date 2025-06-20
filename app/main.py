@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.patients.patient_router import patients_router
+
 from .core.settings import settings
 
 
@@ -18,12 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/")
-def read_root():
-    return {"message": "FastAPI is running inside Docker!"}
-
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
+
+app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
+
