@@ -10,3 +10,5 @@ class PatientModel(BaseNayaModel, table=True):
     user_id: UUID = Field(default=None, foreign_key="users.id")
     is_connected: bool = Field(default=False)
     animal_id: Optional[UUID]= Field(default=None )
+    
+    user: "UserModel" = Relationship(back_populates="patient")  # type: ignore
