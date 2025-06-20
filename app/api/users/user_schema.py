@@ -11,7 +11,6 @@ from app.utils.regex import Regex
 
 class UserSchema(BaseModel):
     name: str = Field(min_length=4, max_length=20, pattern=Regex.USER_NAME)
-    last_name: str = Field(min_length=4, max_length=30, pattern=Regex.USER_NAME)
     email: EmailStr = Field(max_length=40)
 
     class Config:
