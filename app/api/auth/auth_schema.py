@@ -12,7 +12,6 @@ class VerificationRequest(BaseModel):
 
 
 class SelectProfileRequest(BaseModel):
-    user_id: UUID
     id_picture: UUID
     id_animal: UUID
     id_emotion: UUID
