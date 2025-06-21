@@ -1,9 +1,11 @@
 from typing import Union
 from uuid import UUID
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 from fastapi import HTTPException
 
+from app.api.patients.patient_model import PatientModel
+from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.core.http_response import NayaHttpResponse
 
 from app.constants.response_codes import NayaResponseCodes
@@ -12,8 +14,9 @@ from app.constants.user_constants import VerificationModels
 from app.api.users.user_model import UserModel
 from app.api.users.user_service import UserService
 
+
 from app.api.auth.auth_service import AuthService
-from app.api.auth.auth_schema import VerificationRequest
+from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
 
 from .auth_model import VerificationCodeModel
 
@@ -70,6 +73,29 @@ class AuthController:
             raise e
 
         except Exception as e:
+            NayaHttpResponse.internal_error()
+
+    async def select_profile_picture(self, request: SelectProfileRequest):
+        try:
+            relation = AuthService.assign_animal_and_picture(
+                session=self.session,
+                user_id=request.user_id,
+                id_picture=request.id_picture,
+                id_animal=request.id_animal,
+                id_emotion=request.id_emotion,
+            )
+
+            if not relation:
+                NayaHttpResponse.not_found(
+                    data={
+                        "message": NayaResponseCodes.UNEXISTING_USER.detail,
+                    },
+                    error_id=NayaResponseCodes.UNEXISTING_USER.code,
+                )
+
+            return NayaHttpResponse.no_content()
+
+        except Exception:
             NayaHttpResponse.internal_error()
 
     async def get_verification_code_by_code(

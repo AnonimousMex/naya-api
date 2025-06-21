@@ -3,10 +3,16 @@ from fastapi import APIRouter, HTTPException
 
 from app.api.auth.auth_controller import AuthController
 
-from app.api.auth.auth_schema import VerificationRequest
+from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
+import traceback
+
 
 from app.constants.user_constants import VerificationModels
 from app.core.database import SessionDep
+import logging
+import traceback
+
+logger = logging.getLogger("uvicorn.error")
 
 
 auth_router = APIRouter(prefix="/auth")
@@ -34,3 +40,17 @@ async def verify_user_verification_code(
 
     except Exception as e:
         raise e
+
+
+@auth_router.post("/select-profile")
+async def select_profile_picture(request: SelectProfileRequest, session: SessionDep):
+    try:
+        auth_controller = AuthController(session=session)
+        return await auth_controller.select_profile_picture(request)
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))

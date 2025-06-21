@@ -10,3 +10,4 @@ class AnimalModel(BaseNayaModel, table=True):
     description: str = Field(default=None)
 
     patients: List["PatientModel"] = Relationship(back_populates="animal")  # type: ignore
+    picture_emotions: List["PictureAnimalEmotionModel"] = Relationship(back_populates="animal")  # type: ignore
