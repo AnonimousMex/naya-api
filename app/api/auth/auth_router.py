@@ -4,15 +4,9 @@ from fastapi import APIRouter, HTTPException
 from app.api.auth.auth_controller import AuthController
 
 from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
-import traceback
-
 
 from app.constants.user_constants import VerificationModels
 from app.core.database import SessionDep
-import logging
-import traceback
-
-logger = logging.getLogger("uvicorn.error")
 
 
 auth_router = APIRouter(prefix="/auth")
@@ -52,5 +46,4 @@ async def select_profile_picture(request: SelectProfileRequest, session: Session
         raise e
 
     except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise e
