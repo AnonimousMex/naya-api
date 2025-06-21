@@ -6,6 +6,7 @@ from app.api.auth.auth_controller import AuthController
 from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
 
 from app.constants.user_constants import VerificationModels
+from app.core.auth import LoginFormDataDep
 from app.core.database import SessionDep
 
 
@@ -41,6 +42,28 @@ async def select_profile_picture(request: SelectProfileRequest, session: Session
     try:
         auth_controller = AuthController(session=session)
         return await auth_controller.select_profile_picture(request)
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise e
+
+
+@auth_router.post("/login")
+async def login(session: SessionDep, form_data: LoginFormDataDep):
+    try:
+        email = form_data.username
+        password = form_data.password
+        auth_controller = AuthController(session)
+
+        current_user = await auth_controller.get_current_user_from_login(email=email)
+
+        auth_controller.verify_user_password(user=current_user, password=password)
+
+        await auth_controller.is_user_verified(user=current_user)
+
+        return await auth_controller.login(user=current_user, password=password)
 
     except HTTPException as e:
         raise e
