@@ -4,14 +4,14 @@ from typing import Optional, List
 from sqlmodel import Field, Relationship
 from pydantic import EmailStr
 
-from app.core.base_model import BaseMindfulTocModel
+from app.core.base_model import BaseNayaModel
 
 from app.utils.regex import Regex
 
 from app.constants.user_constants import UserRoles
 
 
-class UserModel(BaseMindfulTocModel, table=True):
+class UserModel(BaseNayaModel, table=True):
     __tablename__ = "users"
 
     name: str = Field(min_length=4, max_length=20, regex=Regex.LETTERS)
