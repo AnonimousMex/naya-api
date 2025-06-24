@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.patients.patient_router import patients_router
+from app.api.therapists.therapist_router import therapist_router
+
 from .core.settings import settings
 
 
@@ -27,3 +30,7 @@ def read_root():
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
+
+app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
+app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
+
