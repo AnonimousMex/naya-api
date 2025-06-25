@@ -21,6 +21,7 @@ class UserModel(BaseNayaModel, table=True):
     user_kind: UserRoles
 
     patient: Optional["PatientModel"] = Relationship(back_populates="user")  # type: ignore
+    verification_code: "VerificationCodeModel" = Relationship(back_populates="user")  # type: ignore
     # therapist: Optional["TherapistModel"] = Relationship(back_populates="user")  # type: ignore
     # verification_code: "VerificationCodeModel" = Relationship(back_populates="user")  # type: ignore
     # verification_codes_password_reset: "VerificationCodePasswordResetModel" = Relationship(back_populates="user")  # type: ignore
