@@ -2,14 +2,14 @@ from typing import Union
 from uuid import UUID
 
 from sqlmodel import Session, select
-from fastapi import HTTPException
+from fastapi import HTTPException, responses
 
 from app.api.patients.patient_model import PatientModel
 from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.core.http_response import NayaHttpResponse
 
 from app.constants.response_codes import NayaResponseCodes
-from app.constants.user_constants import VerificationModels
+from app.constants.user_constants import UserRoles, VerificationModels
 
 from app.api.users.user_model import UserModel
 from app.api.users.user_service import UserService
@@ -17,6 +17,7 @@ from app.api.users.user_service import UserService
 
 from app.api.auth.auth_service import AuthService
 from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
+from app.utils.security import get_user_token, verify_password
 
 from .auth_model import VerificationCodeModel
 
@@ -127,3 +128,73 @@ class AuthController:
             )
 
         return True
+
+    async def get_current_user_from_login(self, email: str) -> UserModel:
+        try:
+            user = await UserService.get_user_by_email(
+                email=email, session=self.session
+            )
+
+            if user is False:
+                NayaHttpResponse.unauthorized()
+
+            return user
+        except HTTPException as e:
+            raise e
+
+        except Exception as e:
+            NayaHttpResponse.internal_error()
+
+    def verify_user_password(self, user: UserModel, password: str) -> bool:
+        is_valid_password = verify_password(
+            plain_password=password, hashed_password=user.password
+        )
+
+        if not is_valid_password:
+            NayaHttpResponse.unauthorized()
+
+        return True
+
+    async def is_user_verified(self, user: UserModel):
+        if not user.is_verified:
+            NayaHttpResponse.forbidden(
+                data={
+                    "message": NayaResponseCodes.UNVERIFIED_USER.detail,
+                },
+                error_id=NayaResponseCodes.UNVERIFIED_USER.code,
+            )
+
+    async def login(self, user: UserModel, password: str):
+        try:
+            patient_or_therapist_id = (
+                user.patient.id
+                if user.user_kind == UserRoles.PATIENT
+                else user.therapist.id
+            )
+
+            access_token = get_user_token(
+                user=user,
+                user_type=user.user_kind.value,
+                is_refresh=False,
+                patient_or_therapist_id=patient_or_therapist_id,
+            )
+
+            refresh_token = get_user_token(
+                user=user,
+                user_type=user.user_kind.value,
+                is_refresh=True,
+                patient_or_therapist_id=patient_or_therapist_id,
+            )
+
+            return responses.JSONResponse(
+                content={
+                    "status": "Login success",
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                }
+            )
+        except HTTPException as e:
+            raise e
+
+        except Exception as e:
+            NayaHttpResponse.internal_error()
