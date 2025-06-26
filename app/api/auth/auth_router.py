@@ -41,7 +41,6 @@ async def request_password_reset_verification_code(
     request: RequestPasswordChange, session: SessionDep
 ):
     try:
-        
         auth_controller = AuthController(session=session)
 
         user_verified = await auth_controller.get_current_user(email=request.email)
