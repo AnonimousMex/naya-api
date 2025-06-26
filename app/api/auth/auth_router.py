@@ -1,9 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
-from app.api.auth.auth_controller import AuthController
+from app.api.Auth.auth_controller import AuthController
 
-from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
+from app.api.Auth.auth_schema import RequestPasswordChange, VerificationRequest, SelectProfileRequest
 
 from app.constants.user_constants import VerificationModels
 from app.core.auth import LoginFormDataDep
@@ -35,6 +35,36 @@ async def verify_user_verification_code(
 
     except Exception as e:
         raise e
+    
+@auth_router.post("/password-change-request")
+async def request_password_reset_verification_code(
+    request: RequestPasswordChange, session: SessionDep
+):
+    try:
+        
+        auth_controller = AuthController(session=session)
+
+        user_verified = await auth_controller.get_current_user(email=request.email)
+
+        return await auth_controller.request_password_reset_verification_code(
+            user=user_verified
+        )
+
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise e
+
+
+
+
+
+##Falta el de verificar
+
+
+
+
 
 
 @auth_router.post("/select-profile")

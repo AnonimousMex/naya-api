@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .core.settings import settings
 
 from app.api.patients.patient_router import patients_router
-from .api.auth.auth_router import auth_router
+from .api.Auth.auth_router import auth_router
 
 
 app = FastAPI(
