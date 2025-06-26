@@ -54,17 +54,25 @@ async def request_password_reset_verification_code(
 
     except Exception as e:
         raise e
+    
+@auth_router.post("/verification-code-password-reset")
+async def verify_code(request: VerificationRequest, session: SessionDep):
+    try:
+        auth_controller = AuthController(session=session)
 
+        verification_code = await auth_controller.get_verification_code_by_code(
+            request=request, model= VerificationModels.VERIFICATION_CODE_PASSWORD_RESET_MODEL
+        )
 
+        auth_controller.verify_is_code_alive(verification_code=verification_code)
 
+        return await auth_controller.verify_code(verification_code_model=verification_code)
 
+    except HTTPException as e:
+        raise e
 
-##Falta el de verificar
-
-
-
-
-
+    except Exception as e:
+        raise e
 
 @auth_router.post("/select-profile")
 async def select_profile_picture(request: SelectProfileRequest, session: SessionDep):

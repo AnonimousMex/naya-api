@@ -27,6 +27,12 @@ class AuthService:
                 )
 
                 result = session.exec(statement).first()
+            else:
+                statement = select(VerificationCodePasswordResetModel).where(
+                    VerificationCodePasswordResetModel.code == code
+                )
+
+                result = session.exec(statement).first()
 
                 return result
         except Exception:
@@ -42,8 +48,8 @@ class AuthService:
                     VerificationCodeModel.user_id == user_id
                 )
             else:
-                statement = select(VerificationCodeModel).where(
-                    VerificationCodeModel.user_id == user_id
+                statement = select(VerificationCodePasswordResetModel).where(
+                    VerificationCodePasswordResetModel.user_id == user_id
                 )
             result = session.exec(statement).first()
 
