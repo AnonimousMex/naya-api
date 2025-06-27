@@ -1,3 +1,4 @@
+from random import randint
 from typing import Union
 from uuid import UUID
 
@@ -6,6 +7,7 @@ from sqlmodel import Session, select
 from app.api.patients.patient_model import PatientModel
 from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.api.pictures.picture_model import PictureModel
+from app.api.therapists.therapist_model import TherapistModel
 from app.constants.user_constants import VerificationModels
 
 from .auth_model import VerificationCodeModel
@@ -42,7 +44,94 @@ class AuthService:
             result = session.exec(statement).first()
 
             return result if result else False
-        except Exception as e:
+        except Exception :
+            NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def generate_unique_verification_code(
+        session: Session, model: VerificationModels
+    ) -> str:
+        try:
+            while True:
+                code_digits = [randint(0, 9) for _ in range(4)]
+                code = "".join(map(str, code_digits))
+                # if model == "VerificationCodeModel":
+                existing_code = session.exec(
+                    select(VerificationCodeModel).where(
+                        VerificationCodeModel.code == code
+                    )
+                ).first()
+                # else:
+                    # existing_code = session.exec(
+                    #     select(VerificationCodePasswordResetModel).where(
+                    #         VerificationCodePasswordResetModel.code == code
+                    #     )
+                    # ).first()
+
+                if not existing_code:
+                    return code
+        except Exception :
+            NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def generate_unique_conection_code(
+        session: Session
+    ) -> str:
+        try:
+            while True:
+                code_digits = [randint(0, 9) for _ in range(4)]
+                code = "".join(map(str, code_digits))
+
+                existing_code = session.exec(
+                    select(TherapistModel).where(
+                        TherapistModel.code_conection == code
+                    )
+                ).first()
+                
+                if not existing_code:
+                    return code
+        except Exception:
+            NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def create_verification_code(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> VerificationCodeModel:
+        try:
+            user = VerificationCodeModel(code=code, user_id=user_id)
+
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+
+            return user
+        except Exception:
+            NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def create_conection_code(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> TherapistModel:
+        try:
+            therapist = session.query(TherapistModel).filter(
+            TherapistModel.user_id == user_id
+            ).first()
+            
+            if not therapist:
+                raise NayaHttpResponse.internal_error()
+
+            # Actualiza solo el campo code_conection
+            therapist.code_conection = code
+
+            session.commit()
+            session.refresh(therapist)
+
+            return therapist
+        except Exception:
             NayaHttpResponse.internal_error()
 
     @staticmethod
