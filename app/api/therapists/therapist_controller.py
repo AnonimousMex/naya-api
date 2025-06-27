@@ -4,16 +4,17 @@ from fastapi import HTTPException
 
 from sqlmodel import Session
 
-from app.api.Auth.auth_service import AuthService
+from app.api.auth.auth_service import AuthService
 from app.api.therapists.therapist_services import TherapistService
 from app.constants.response_codes import NayaResponseCodes
 from app.core.http_response import NayaHttpResponse
 
-from app.constants.user_constants import UserRoles
+from app.constants.user_constants import UserRoles, VerificationModels
 
 from app.api.users.user_service import UserService
 from app.api.users.user_controller import UserController
 from app.api.users.user_schema import UserCreateSchema, UserResponseSchema
+from app.utils.email import EmailService
 
 
 from .therapist_schema import TherapistResponseSchema, TherapistCreateSchema
@@ -44,19 +45,20 @@ class TherapistController:
                 user=user, session=self.session
             )
 
-            # new_verification_code = await AuthService.generate_unique_verification_code(
-            #     session=self.session, model=VerificationModels.VERIFICATION_CODE_MODEL
-            # )
+            new_verification_code = await AuthService.generate_unique_verification_code(
+                session=self.session, model=VerificationModels.VERIFICATION_CODE_MODEL
+            )
+            print("aqui entra")
+            verification_code = await AuthService.create_verification_code(
+                code=new_verification_code, user_id=user.id, session=self.session
+            )
+            
 
-            # verification_code = await AuthService.create_verification_code(
-            #     code=new_verification_code, user_id=user.id, session=self.session
-            # )
-
-            # await EmailService.send_verification_email(
-            #     to_name=user.name.capitalize(),
-            #     to_email=user.email,
-            #     verification_code=verification_code.code,
-            # )
+            await EmailService.send_verification_email(
+                to_name=user.name.capitalize(),
+                to_email=user.email,
+                verification_code=verification_code.code,
+            )
 
             user_dump = UserResponseSchema.model_validate(user).model_dump()
 
