@@ -48,18 +48,31 @@ class TherapistController:
             new_verification_code = await AuthService.generate_unique_verification_code(
                 session=self.session, model=VerificationModels.VERIFICATION_CODE_MODEL
             )
-            print("aqui entra")
+
             verification_code = await AuthService.create_verification_code(
                 code=new_verification_code, user_id=user.id, session=self.session
             )
             
-
             await EmailService.send_verification_email(
                 to_name=user.name.capitalize(),
                 to_email=user.email,
                 verification_code=verification_code.code,
             )
 
+            new_conection_code = await AuthService.generate_unique_conection_code(
+                session=self.session
+            )
+
+            conection_code = await AuthService.create_conection_code(
+                code=new_conection_code, user_id=user.id, session=self.session
+            )
+
+            await EmailService.send_conection_code_email(
+                to_name=user.name.capitalize(),
+                to_email=user.email,
+                verification_code=new_conection_code,
+            )
+            
             user_dump = UserResponseSchema.model_validate(user).model_dump()
 
             response = TherapistResponseSchema(**user_dump, therapist_id=therapist.id)
@@ -69,7 +82,7 @@ class TherapistController:
         except HTTPException as e:
             raise e
 
-        except Exception as e:
+        except Exception:
             NayaHttpResponse.internal_error()
 
     async def get_therapist_by_id(self, therapist_id: UUID) -> TherapistResponseSchema:
@@ -96,5 +109,5 @@ class TherapistController:
         except HTTPException as e:
             raise e
 
-        except Exception as e:
+        except Exception:
             NayaHttpResponse.internal_error()

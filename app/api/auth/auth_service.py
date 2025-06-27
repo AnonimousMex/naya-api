@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from app.api.patients.patient_model import PatientModel
 from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.api.pictures.picture_model import PictureModel
+from app.api.therapists.therapist_model import TherapistModel
 from app.constants.user_constants import VerificationModels
 
 from .auth_model import VerificationCodeModel
@@ -43,7 +44,7 @@ class AuthService:
             result = session.exec(statement).first()
 
             return result if result else False
-        except Exception as e:
+        except Exception :
             NayaHttpResponse.internal_error()
 
     @staticmethod
@@ -69,9 +70,29 @@ class AuthService:
 
                 if not existing_code:
                     return code
-        except Exception as e:
-            print(e)
+        except Exception :
             NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def generate_unique_conection_code(
+        session: Session
+    ) -> str:
+        try:
+            while True:
+                code_digits = [randint(0, 9) for _ in range(4)]
+                code = "".join(map(str, code_digits))
+
+                existing_code = session.exec(
+                    select(TherapistModel).where(
+                        TherapistModel.code_conection == code
+                    )
+                ).first()
+                
+                if not existing_code:
+                    return code
+        except Exception:
+            NayaHttpResponse.internal_error()
+
     @staticmethod
     async def create_verification_code(
         code: str,
@@ -86,6 +107,30 @@ class AuthService:
             session.refresh(user)
 
             return user
+        except Exception:
+            NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def create_conection_code(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> TherapistModel:
+        try:
+            therapist = session.query(TherapistModel).filter(
+            TherapistModel.user_id == user_id
+            ).first()
+            
+            if not therapist:
+                raise NayaHttpResponse.internal_error()
+
+            # Actualiza solo el campo code_conection
+            therapist.code_conection = code
+
+            session.commit()
+            session.refresh(therapist)
+
+            return therapist
         except Exception:
             NayaHttpResponse.internal_error()
 
