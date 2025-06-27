@@ -1,9 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
-from app.api.Auth.auth_controller import AuthController
+from app.api.auth.auth_controller import AuthController
 
-from app.api.Auth.auth_schema import RequestPasswordChange, VerificationRequest, SelectProfileRequest
+from app.api.auth.auth_schema import RequestPasswordChange, ResendCode, VerificationRequest, SelectProfileRequest
 
 from app.constants.user_constants import VerificationModels
 from app.core.auth import LoginFormDataDep
@@ -86,6 +86,21 @@ async def select_profile_picture(request: SelectProfileRequest, session: Session
     except Exception as e:
         raise e
 
+@auth_router.put("/resend-verification-code")
+async def resend_verification_code(
+    request: ResendCode, session: SessionDep
+):
+    try:
+        auth_controller = AuthController(session=session)
+
+        current_user = await auth_controller.get_current_user_from_login(email=request.email)
+
+        return await auth_controller.resend_code(user=current_user)
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise e
 
 @auth_router.post("/login")
 async def login(session: SessionDep, form_data: LoginFormDataDep):

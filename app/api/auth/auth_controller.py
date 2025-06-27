@@ -13,8 +13,8 @@ from app.api.users.user_model import UserModel
 from app.api.users.user_service import UserService
 
 
-from app.api.Auth.auth_service import AuthService
-from app.api.Auth.auth_schema import VerificationRequest, SelectProfileRequest
+from app.api.auth.auth_service import AuthService
+from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
 from app.utils.email import EmailService
 from app.utils.security import get_user_token, verify_password
 
@@ -118,7 +118,7 @@ class AuthController:
 
     async def request_password_reset_verification_code(self, user: UserModel):
             try:
-                new_verification_code = await AuthService.generate_unique_verification_code(
+                new_password_reset_code = await AuthService.generate_unique_verification_code(
                     session=self.session,
                     model=VerificationModels.VERIFICATION_CODE_PASSWORD_RESET_MODEL,
                 )
@@ -133,7 +133,7 @@ class AuthController:
                 ):
                     verification_code = (
                         await AuthService.create_verification_code_reset_password(
-                            code=new_verification_code,
+                            code=new_password_reset_code,
                             user_id=user.id,
                             session=self.session,
                         )
@@ -141,7 +141,7 @@ class AuthController:
                 else:
                     verification_code = (
                         await AuthService.update_verification_code_reset_password(
-                            code=new_verification_code,
+                            code=new_password_reset_code,
                             user_id=user.id,
                             session=self.session,
                         )
@@ -160,6 +160,31 @@ class AuthController:
 
             except Exception as e:
                 NayaHttpResponse.internal_error()
+
+    async def resend_code (self, user: UserModel):
+        try:
+            new_verification_code = await AuthService.generate_unique_verification_code(
+                    session=self.session,
+                    model=VerificationModels.VERIFICATION_CODE_MODEL,
+                )
+            
+            verification_code = (
+                        await AuthService.update_verification_code(
+                            code=new_verification_code,
+                            user_id=user.id,
+                            session=self.session,
+                        )
+                    )
+
+            await EmailService.send_verification_email(
+                    to_name=user.name.capitalize(),
+                    to_email=user.email,
+                    verification_code=verification_code.code,
+                )
+
+            return NayaHttpResponse.no_content()
+        except HTTPException:
+            NayaHttpResponse.internal_error()
 
     def verify_is_code_alive(self, verification_code: VerificationCodeModel) -> bool:
         if not verification_code.is_alive:

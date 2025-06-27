@@ -178,6 +178,7 @@ class AuthService:
             return user
         except Exception:
             NayaHttpResponse.internal_error()
+    
     @staticmethod
     async def update_verification_code_reset_password(
         code: str,
@@ -201,6 +202,28 @@ class AuthService:
         except Exception:
             NayaHttpResponse.internal_error()
 
+    @staticmethod
+    async def update_verification_code(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> VerificationCodeModel:
+        try:
+            statement = select(VerificationCodeModel).where(
+                VerificationCodeModel.user_id == user_id
+            )
+
+            user = session.exec(statement).first()
+            user.code = code
+            user.is_alive = True
+            user.updated_at = datetime.now(timezone.utc)
+
+            session.add(user)
+            session.commit()
+
+            return user
+        except Exception:
+            NayaHttpResponse.internal_error()
 
 @staticmethod
 def assign_animal_and_picture(

@@ -8,7 +8,7 @@ from app.api.therapists.therapist_router import therapist_router
 from .core.settings import settings
 
 from app.api.patients.patient_router import patients_router
-from .api.Auth.auth_router import auth_router
+from .api.auth.auth_router import auth_router
 
 
 app = FastAPI(
