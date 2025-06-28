@@ -10,6 +10,7 @@ class VerificationRequest(BaseModel):
         alias_generator = to_camel
         populate_by_name = True
 
+
 class RequestPasswordChange(BaseModel):
     email: EmailStr = Field(max_length=40)
 
@@ -17,14 +18,17 @@ class RequestPasswordChange(BaseModel):
         alias_generator = to_camel
         populate_by_name = True
 
-class ResendCode(BaseModel): 
+
+class ResendCode(BaseModel):
     email: EmailStr = Field(max_length=40)
 
     class config:
         alias_generator = to_camel
         populate_by_name = True
 
+
 class SelectProfileRequest(BaseModel):
+    user_id: UUID
     id_picture: UUID
     id_animal: UUID
     id_emotion: UUID

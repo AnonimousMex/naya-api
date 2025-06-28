@@ -32,10 +32,10 @@ class AuthService:
                 )
 
                 result = session.exec(statement).first()
-            else:
-                statement = select(VerificationCodePasswordResetModel).where(
-                    VerificationCodePasswordResetModel.code == code
-                )
+                # else:
+                #     statement = select(VerificationCodePasswordResetModel).where(
+                #         VerificationCodePasswordResetModel.code == code
+                #     )
 
                 result = session.exec(statement).first()
 
@@ -54,10 +54,10 @@ class AuthService:
                 statement = select(VerificationCodeModel).where(
                     VerificationCodeModel.user_id == user_id
                 )
-            else:
-                statement = select(VerificationCodePasswordResetModel).where(
-                    VerificationCodePasswordResetModel.user_id == user_id
-                )
+            # else:
+            #     statement = select(VerificationCodePasswordResetModel).where(
+            #         VerificationCodePasswordResetModel.user_id == user_id
+            #     )
             result = session.exec(statement).first()
 
             return result if result else False
