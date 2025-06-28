@@ -12,6 +12,11 @@ from app.api.users.user_model import UserModel
 from app.api.animals.animal_model import AnimalModel
 from app.api.patients.patient_model import PatientModel
 from app.api.auth.auth_model import VerificationCodeModel
+from app.api.therapists.therapist_model import TherapistModel
+from app.api.pictures.picture_model import PictureModel
+from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
+from app.api.auth.auth_model import ConnectionModel
+from app.api.emotions.emotion_model import EmotionModel
 
 
 database_url = settings.DATABASE_URL

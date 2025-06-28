@@ -198,3 +198,47 @@ class AuthController:
 
         except Exception as e:
             NayaHttpResponse.internal_error()
+
+    async def connect_therapist(self, *, patient_id: UUID, code: str):
+        therapist = AuthService.get_therapist_by_code(self.session, code=code)
+        if not therapist:
+            NayaHttpResponse.bad_request(
+                data={
+                    "message": NayaResponseCodes.UNEXISTING_CODE.detail,
+                    "providedValue": {"code": code},
+                },
+                error_id=NayaResponseCodes.UNEXISTING_CODE.code,
+            )
+
+        patient = AuthService.get_patient(self.session, patient_id=patient_id)
+        if not patient:
+            NayaHttpResponse.bad_request(
+                data={
+                    "message": NayaResponseCodes.UNEXISTING_PATIENT.detail,
+                    "providedValue": {"patient_id": patient_id},
+                },
+                error_id=NayaResponseCodes.UNEXISTING_PATIENT.code,
+            )
+
+        if AuthService.connection_exists(
+            self.session, therapist_id=therapist.id, patient_id=patient.id
+        ):
+            NayaHttpResponse.bad_request(
+                data={
+                    "message": NayaResponseCodes.CONNECTION_EXISTS.detail,
+                    "providedValue": {
+                        "therapist_id": str(therapist.id),
+                        "patient_id": str(patient.id),
+                    },
+                },
+                error_id=NayaResponseCodes.CONNECTION_EXISTS.code,
+            )
+
+        conn = AuthService.create_connection(
+            self.session, therapist_id=therapist.id, patient_id=patient.id
+        )
+        patient.is_connected = True
+        self.session.add(patient)
+        self.session.commit()
+
+        return NayaHttpResponse.no_content()

@@ -25,3 +25,7 @@ class NayaResponseCodes:
     VERIFIED_USER = create_response_code("E009", "User verified successfully")
     UNEXISTING_USER = create_response_code("E010", "User does not exist")
     UNVERIFIED_USER = create_response_code("E011", "User is not verified")
+    INVALID_CODE = create_response_code("E012", "Invalid code")
+    CONNECTION_EXISTS = create_response_code(
+        "E013", "Connection with this therapist already exists"
+    )

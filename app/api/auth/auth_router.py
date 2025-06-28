@@ -3,8 +3,13 @@ from fastapi import APIRouter, HTTPException
 
 from app.api.auth.auth_controller import AuthController
 
-from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
+from app.api.auth.auth_schema import (
+    ConnectionCodeRequest,
+    VerificationRequest,
+    SelectProfileRequest,
+)
 
+from app.api.auth.auth_service import AuthService
 from app.constants.user_constants import VerificationModels
 from app.core.auth import LoginFormDataDep
 from app.core.database import SessionDep
@@ -33,6 +38,20 @@ async def verify_user_verification_code(
     except HTTPException as e:
         raise e
 
+    except Exception as e:
+        raise e
+
+
+@auth_router.post("/connect-therapist")
+async def connect_therapist(request: ConnectionCodeRequest, session: SessionDep):
+    try:
+        auth_controller = AuthController(session=session)
+        return await auth_controller.connect_therapist(
+            patient_id=request.id_patient,
+            code=request.code,
+        )
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise e
 

@@ -19,3 +19,12 @@ class SelectProfileRequest(BaseModel):
     class Config:
         alias_generator = to_camel
         populate_by_name = True
+
+
+class ConnectionCodeRequest(BaseModel):
+    id_patient: UUID
+    code: str
+
+    class Config:
+        alias_generator = to_camel
+        populate_by_name = True

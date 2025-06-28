@@ -20,3 +20,13 @@ class VerificationCodeModel(BaseVerificationCodeModel, table=True):
     __tablename__ = "verification_codes"
 
     user: "UserModel" = Relationship(back_populates="verification_code")  # type: ignore
+
+
+class ConnectionModel(BaseNayaModel, table=True):
+    __tablename__ = "connections"
+
+    therapist_id: UUID = Field(foreign_key="therapist.id")
+    patient_id: UUID = Field(foreign_key="patients.id")
+
+    therapist: "TherapistModel" = Relationship(back_populates="connections")  # type: ignore
+    patient: "PatientModel" = Relationship(back_populates="connections")  # type: ignore
