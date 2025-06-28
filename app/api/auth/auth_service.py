@@ -30,16 +30,15 @@ class AuthService:
                 statement = select(VerificationCodeModel).where(
                     VerificationCodeModel.code == code
                 )
+                result = session.exec(statement).first()
+            else:
+                statement = select(VerificationCodePasswordResetModel).where(
+                    VerificationCodePasswordResetModel.code == code
+                )
 
                 result = session.exec(statement).first()
-                # else:
-                #     statement = select(VerificationCodePasswordResetModel).where(
-                #         VerificationCodePasswordResetModel.code == code
-                #     )
 
-                result = session.exec(statement).first()
-
-                return result
+            return result
         except Exception:
             NayaHttpResponse.internal_error()
 
