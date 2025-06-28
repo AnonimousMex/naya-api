@@ -11,7 +11,11 @@ from app.api.pictures.picture_model import PictureModel
 from app.api.therapists.therapist_model import TherapistModel
 from app.constants.user_constants import VerificationModels
 
-from .auth_model import VerificationCodeModel, VerificationCodePasswordResetModel
+from .auth_model import (
+    ConnectionModel,
+    VerificationCodeModel,
+    VerificationCodePasswordResetModel,
+)
 
 from app.core.http_response import NayaHttpResponse
 
@@ -41,7 +45,9 @@ class AuthService:
 
     @staticmethod
     async def user_in_the_verification_codes_tables(
-        session: Session, user_id: UUID, model: Union[VerificationCodeModel, VerificationCodePasswordResetModel]
+        session: Session,
+        user_id: UUID,
+        model: Union[VerificationCodeModel, VerificationCodePasswordResetModel],
     ) -> VerificationCodeModel | bool:
         try:
             if isinstance(model, VerificationCodeModel):
@@ -133,7 +139,7 @@ class AuthService:
                 session.commit()
         except Exception:
             NayaHttpResponse.internal_error()
-    
+
     @staticmethod
     async def generate_unique_verification_code(
         session: Session, model: VerificationModels
@@ -159,7 +165,7 @@ class AuthService:
                     return code
         except Exception:
             NayaHttpResponse.internal_error()
-    
+
     @staticmethod
     async def create_verification_code_reset_password(
         code: str,
@@ -176,7 +182,7 @@ class AuthService:
             return user
         except Exception:
             NayaHttpResponse.internal_error()
-    
+
     @staticmethod
     async def update_verification_code_reset_password(
         code: str,
@@ -223,43 +229,6 @@ class AuthService:
         except Exception:
             NayaHttpResponse.internal_error()
 
-@staticmethod
-def assign_animal_and_picture(
-    session: Session,
-    user_id: UUID,
-    id_picture: UUID,
-    id_animal: UUID,
-    id_emotion: UUID,
-) -> PictureAnimalEmotionModel | None:
-    try:
-        picture_stmt = select(PictureModel).where(
-            PictureModel.id == id_picture, PictureModel.is_profile == True
-        )
-        picture = session.exec(picture_stmt).first()
-        if not picture:
-            return None
-
-            patient_stmt = select(PatientModel).where(PatientModel.user_id == user_id)
-            patient = session.exec(patient_stmt).first()
-            if not patient:
-                return None
-
-            relation = PictureAnimalEmotionModel(
-                id_picture=id_picture, id_animal=id_animal, id_emotion=id_emotion
-            )
-            session.add(relation)
-
-            patient.animal_id = id_animal
-            session.add(patient)
-
-            session.commit()
-            session.refresh(relation)
-
-            return relation
-
-        except Exception:
-            NayaHttpResponse.internal_error()
-
     @staticmethod
     def get_patient(session: Session, *, patient_id: UUID) -> PatientModel | None:
         return session.get(PatientModel, patient_id)
@@ -288,3 +257,40 @@ def assign_animal_and_picture(
     def get_therapist_by_code(session: Session, *, code: str) -> TherapistModel | None:
         stmt = select(TherapistModel).where(TherapistModel.code_conection == code)
         return session.exec(stmt).first()
+
+    @staticmethod
+    def assign_animal_and_picture(
+        session: Session,
+        user_id: UUID,
+        id_picture: UUID,
+        id_animal: UUID,
+        id_emotion: UUID,
+    ) -> PictureAnimalEmotionModel | None:
+        try:
+            picture_stmt = select(PictureModel).where(
+                PictureModel.id == id_picture, PictureModel.is_profile == True
+            )
+            picture = session.exec(picture_stmt).first()
+            if not picture:
+                return None
+
+            patient_stmt = select(PatientModel).where(PatientModel.user_id == user_id)
+            patient = session.exec(patient_stmt).first()
+            if not patient:
+                return None
+
+            relation = PictureAnimalEmotionModel(
+                id_picture=id_picture, id_animal=id_animal, id_emotion=id_emotion
+            )
+            session.add(relation)
+
+            patient.animal_id = id_animal
+            session.add(patient)
+
+            session.commit()
+            session.refresh(relation)
+
+            return relation
+
+        except Exception:
+            NayaHttpResponse.internal_error()
