@@ -30,3 +30,9 @@ class ConnectionModel(BaseNayaModel, table=True):
 
     therapist: "TherapistModel" = Relationship(back_populates="connections")  # type: ignore
     patient: "PatientModel" = Relationship(back_populates="connections")  # type: ignore
+
+
+class VerificationCodePasswordResetModel(BaseVerificationCodeModel, table=True):
+    __tablename__ = "verification_codes_password_reset"
+
+    user: "UserModel" = Relationship(back_populates="verification_codes_password_reset")  # type: ignore

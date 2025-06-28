@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from random import randint
 from typing import Union
 from uuid import UUID
@@ -10,7 +11,7 @@ from app.api.pictures.picture_model import PictureModel
 from app.api.therapists.therapist_model import TherapistModel
 from app.constants.user_constants import VerificationModels
 
-from .auth_model import ConnectionModel, VerificationCodeModel
+from .auth_model import VerificationCodeModel, VerificationCodePasswordResetModel
 
 from app.core.http_response import NayaHttpResponse
 
@@ -27,49 +28,33 @@ class AuthService:
                 )
 
                 result = session.exec(statement).first()
+            else:
+                statement = select(VerificationCodePasswordResetModel).where(
+                    VerificationCodePasswordResetModel.code == code
+                )
+
+                result = session.exec(statement).first()
 
                 return result
         except Exception:
             NayaHttpResponse.internal_error()
 
     @staticmethod
-    async def user_in_the_verification_code_table(
-        session: Session, user_id: UUID
+    async def user_in_the_verification_codes_tables(
+        session: Session, user_id: UUID, model: Union[VerificationCodeModel, VerificationCodePasswordResetModel]
     ) -> VerificationCodeModel | bool:
         try:
-            statement = select(VerificationCodeModel).where(
-                VerificationCodeModel.user_id == user_id
-            )
-
+            if isinstance(model, VerificationCodeModel):
+                statement = select(VerificationCodeModel).where(
+                    VerificationCodeModel.user_id == user_id
+                )
+            else:
+                statement = select(VerificationCodePasswordResetModel).where(
+                    VerificationCodePasswordResetModel.user_id == user_id
+                )
             result = session.exec(statement).first()
 
             return result if result else False
-        except Exception:
-            NayaHttpResponse.internal_error()
-
-    @staticmethod
-    async def generate_unique_verification_code(
-        session: Session, model: VerificationModels
-    ) -> str:
-        try:
-            while True:
-                code_digits = [randint(0, 9) for _ in range(4)]
-                code = "".join(map(str, code_digits))
-                # if model == "VerificationCodeModel":
-                existing_code = session.exec(
-                    select(VerificationCodeModel).where(
-                        VerificationCodeModel.code == code
-                    )
-                ).first()
-                # else:
-                # existing_code = session.exec(
-                #     select(VerificationCodePasswordResetModel).where(
-                #         VerificationCodePasswordResetModel.code == code
-                #     )
-                # ).first()
-
-                if not existing_code:
-                    return code
         except Exception:
             NayaHttpResponse.internal_error()
 
@@ -148,22 +133,111 @@ class AuthService:
                 session.commit()
         except Exception:
             NayaHttpResponse.internal_error()
+    
+    @staticmethod
+    async def generate_unique_verification_code(
+        session: Session, model: VerificationModels
+    ) -> str:
+        try:
+            while True:
+                code_digits = [randint(0, 9) for _ in range(4)]
+                code = "".join(map(str, code_digits))
+                if model == "VerificationCodeModel":
+                    existing_code = session.exec(
+                        select(VerificationCodeModel).where(
+                            VerificationCodeModel.code == code
+                        )
+                    ).first()
+                else:
+                    existing_code = session.exec(
+                        select(VerificationCodePasswordResetModel).where(
+                            VerificationCodePasswordResetModel.code == code
+                        )
+                    ).first()
+
+                if not existing_code:
+                    return code
+        except Exception:
+            NayaHttpResponse.internal_error()
+    
+    @staticmethod
+    async def create_verification_code_reset_password(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> VerificationCodePasswordResetModel:
+        try:
+            user = VerificationCodePasswordResetModel(code=code, user_id=user_id)
+
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+
+            return user
+        except Exception:
+            NayaHttpResponse.internal_error()
+    
+    @staticmethod
+    async def update_verification_code_reset_password(
+        code: str,
+        user_id: UUID,
+        session: Session,
+    ) -> VerificationCodePasswordResetModel:
+        try:
+            statement = select(VerificationCodePasswordResetModel).where(
+                VerificationCodePasswordResetModel.user_id == user_id
+            )
+
+            user = session.exec(statement).first()
+            user.code = code
+            user.is_alive = True
+            user.updated_at = datetime.now(timezone.utc)
+
+            session.add(user)
+            session.commit()
+
+            return user
+        except Exception:
+            NayaHttpResponse.internal_error()
 
     @staticmethod
-    def assign_animal_and_picture(
-        session: Session,
+    async def update_verification_code(
+        code: str,
         user_id: UUID,
-        id_picture: UUID,
-        id_animal: UUID,
-        id_emotion: UUID,
-    ) -> PictureAnimalEmotionModel | None:
+        session: Session,
+    ) -> VerificationCodeModel:
         try:
-            picture_stmt = select(PictureModel).where(
-                PictureModel.id == id_picture, PictureModel.is_profile == True
+            statement = select(VerificationCodeModel).where(
+                VerificationCodeModel.user_id == user_id
             )
-            picture = session.exec(picture_stmt).first()
-            if not picture:
-                return None
+
+            user = session.exec(statement).first()
+            user.code = code
+            user.is_alive = True
+            user.updated_at = datetime.now(timezone.utc)
+
+            session.add(user)
+            session.commit()
+
+            return user
+        except Exception:
+            NayaHttpResponse.internal_error()
+
+@staticmethod
+def assign_animal_and_picture(
+    session: Session,
+    user_id: UUID,
+    id_picture: UUID,
+    id_animal: UUID,
+    id_emotion: UUID,
+) -> PictureAnimalEmotionModel | None:
+    try:
+        picture_stmt = select(PictureModel).where(
+            PictureModel.id == id_picture, PictureModel.is_profile == True
+        )
+        picture = session.exec(picture_stmt).first()
+        if not picture:
+            return None
 
             patient_stmt = select(PatientModel).where(PatientModel.user_id == user_id)
             patient = session.exec(patient_stmt).first()

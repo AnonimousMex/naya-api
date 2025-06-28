@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from pydantic import BaseModel
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from typing import Generic, TypeVar, Optional
 
 
@@ -76,8 +76,8 @@ class NayaHttpResponse(Generic[T]):
         )
 
     @staticmethod
-    def no_content() -> JSONResponse:
-        return JSONResponse(status_code=HttpStatus.NO_CONTENT, content={})
+    def no_content() -> Response:
+        return Response(status_code=HttpStatus.NO_CONTENT)
 
     @staticmethod
     def updated(data: Optional[T] = None) -> JSONResponse:

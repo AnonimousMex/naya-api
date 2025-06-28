@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -10,6 +10,19 @@ class VerificationRequest(BaseModel):
         alias_generator = to_camel
         populate_by_name = True
 
+class RequestPasswordChange(BaseModel):
+    email: EmailStr = Field(max_length=40)
+
+    class Config:
+        alias_generator = to_camel
+        populate_by_name = True
+
+class ResendCode(BaseModel): 
+    email: EmailStr = Field(max_length=40)
+
+    class config:
+        alias_generator = to_camel
+        populate_by_name = True
 
 class SelectProfileRequest(BaseModel):
     id_picture: UUID
