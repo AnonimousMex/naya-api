@@ -9,6 +9,7 @@ from sqlmodel import SQLModel
 from app.core.settings import settings
 
 from app.api.users.user_model import UserModel
+from app.api.therapists.therapist_model import TherapistModel
 from app.api.animals.animal_model import AnimalModel
 from app.api.patients.patient_model import PatientModel
 from app.api.auth.auth_model import VerificationCodeModel

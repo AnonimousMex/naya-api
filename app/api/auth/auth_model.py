@@ -20,3 +20,8 @@ class VerificationCodeModel(BaseVerificationCodeModel, table=True):
     __tablename__ = "verification_codes"
 
     user: "UserModel" = Relationship(back_populates="verification_code")  # type: ignore
+
+class VerificationCodePasswordResetModel(BaseVerificationCodeModel, table=True):
+    __tablename__ = "verification_codes_password_reset"
+
+    user: "UserModel" = Relationship(back_populates="verification_codes_password_reset")  # type: ignore
