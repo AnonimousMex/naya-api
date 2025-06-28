@@ -31,7 +31,7 @@ def upgrade() -> None:
     sa.Column('city', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=True),
     sa.Column('state', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=True),
     sa.Column('postal_code', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=True),
-    sa.Column('code_connection', sqlmodel.sql.sqltypes.AutoString(length=4), nullable=True),
+    sa.Column('code_conection', sqlmodel.sql.sqltypes.AutoString(length=4), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
 
