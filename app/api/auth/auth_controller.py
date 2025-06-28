@@ -104,7 +104,7 @@ class AuthController:
         verification_code = await AuthService.get_verification_code(
             code=request.code, table=model, session=self.session
         )
-        # print(verification_code)
+
         if not verification_code:
             NayaHttpResponse.bad_request(
                 data={
