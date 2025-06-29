@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from sqlmodel import Field, Relationship
 from app.core.base_model import BaseNayaModel
@@ -13,3 +13,4 @@ class PatientModel(BaseNayaModel, table=True):
 
     user: "UserModel" = Relationship(back_populates="patient")  # type: ignore
     animal: "AnimalModel" = Relationship(back_populates="patients")  # type: ignore
+    connections: List["ConnectionModel"] = Relationship(back_populates="patient")  # type: ignore
