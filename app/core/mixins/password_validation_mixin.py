@@ -10,7 +10,7 @@ from app.constants.response_codes import NayaResponseCodes
 
 class PasswordValidationMixin(BaseModel):
     password: str = Field(min_length=8, max_length=20)
-    # confirm_password: str = Field(min_length=8, max_length=20)
+    confirm_password: str = Field(min_length=8, max_length=20)
 
     @field_validator("password")
     @classmethod
@@ -20,13 +20,13 @@ class PasswordValidationMixin(BaseModel):
             raise ValueError(NayaResponseCodes.INVALID_PASSWORD.detail)
         return p
 
-    # @model_validator(mode="after")
-    # def passwords_match(self) -> "PasswordValidationMixin":
-    #     if self.password != self.confirm_password:
-    #         NayaHttpResponse.forbidden(
-    #             data={
-    #                 "message": NayaResponseCodes.INVALID_PASSWORDS_MATCH.detail,
-    #             },
-    #             error_id=NayaResponseCodes.INVALID_PASSWORDS_MATCH.code,
-    #         )
-    #     return self
+    @model_validator(mode="after")
+    def passwords_match(self) -> "PasswordValidationMixin":
+        if self.password != self.confirm_password:
+            NayaHttpResponse.forbidden(
+                data={
+                    "message": NayaResponseCodes.INVALID_PASSWORDS_MATCH.detail,
+                },
+                error_id=NayaResponseCodes.INVALID_PASSWORDS_MATCH.code,
+            )
+        return self
