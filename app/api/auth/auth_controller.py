@@ -163,6 +163,15 @@ class AuthController:
         except Exception as e:
             NayaHttpResponse.internal_error()
 
+    async def update_user_password(self, user_id: UUID, password: str):
+        try:
+            await AuthService.update_user_password(
+                user_id=user_id, password=password, session=self.session)
+            
+            return NayaHttpResponse.no_content()
+        except HTTPException:
+            NayaHttpResponse.internal_error()
+
     async def resend_code(self, user: UserModel):
         try:
             new_verification_code = await AuthService.generate_unique_verification_code(

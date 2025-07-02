@@ -5,11 +5,14 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
+from app.api.auth.auth_schema import ResetPasswordRequest
 from app.api.patients.patient_model import PatientModel
 from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.api.pictures.picture_model import PictureModel
 from app.api.therapists.therapist_model import TherapistModel
+from app.api.users.user_model import UserModel
 from app.constants.user_constants import VerificationModels
+from app.utils.security import get_password_hash
 
 from .auth_model import (
     ConnectionModel,
@@ -179,6 +182,24 @@ class AuthService:
             session.refresh(user)
 
             return user
+        except Exception:
+            NayaHttpResponse.internal_error()
+
+    @staticmethod
+    async def update_user_password(
+        session: Session, user_id: UUID, password: str
+
+    ):
+        try:
+            hashed_password = get_password_hash(password)
+            statement = select(UserModel).where(UserModel.id == user_id)
+
+            user = session.exec(statement).first()
+            user.password = hashed_password
+            user.updated_at = datetime.now(timezone.utc)
+
+            session.add(user)
+            session.commit()
         except Exception:
             NayaHttpResponse.internal_error()
 

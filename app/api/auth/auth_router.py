@@ -7,6 +7,7 @@ from app.api.auth.auth_schema import (
     RequestPasswordChange,
     ResendCode,
     ConnectionCodeRequest,
+    ResetPasswordRequest,
     VerificationRequest,
     SelectProfileRequest,
 )
@@ -86,6 +87,22 @@ async def verify_code(request: VerificationRequest, session: SessionDep):
     except Exception as e:
         raise e
 
+@auth_router.put("/password-reset")
+async def reset_password(request: ResetPasswordRequest, session: SessionDep):
+    try:
+        auth_controller = AuthController(session=session)
+
+        user = await auth_controller.get_current_user(email=request.email)
+
+        return await auth_controller.update_user_password(
+            user_id= user.id,
+            password=request.password
+        )
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise e
 
 @auth_router.post("/connect-therapist")
 async def connect_therapist(request: ConnectionCodeRequest, session: SessionDep):
