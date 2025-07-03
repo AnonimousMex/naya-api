@@ -52,7 +52,7 @@ class TherapistController:
             verification_code = await AuthService.create_verification_code(
                 code=new_verification_code, user_id=user.id, session=self.session
             )
-            
+
             await EmailService.send_verification_email(
                 to_name=user.name.capitalize(),
                 to_email=user.email,
@@ -72,7 +72,7 @@ class TherapistController:
                 to_email=user.email,
                 verification_code=conection_code,
             )
-            
+
             user_dump = UserResponseSchema.model_validate(user).model_dump()
 
             response = TherapistResponseSchema(**user_dump, therapist_id=therapist.id)
@@ -109,5 +109,59 @@ class TherapistController:
         except HTTPException as e:
             raise e
 
+        except Exception:
+            NayaHttpResponse.internal_error()
+
+    async def disconnect_patient(self, *, therapist_id: UUID, patient_id: UUID):
+        try:
+            therapist = await TherapistService.get_therapist_by_id(
+                therapist_id=therapist_id, session=self.session
+            )
+            if therapist is None:
+                NayaHttpResponse.not_found(
+                    data={
+                        "message": NayaResponseCodes.UNEXISTING_THERAPIST.detail,
+                        "providedValue": str(therapist_id),
+                    },
+                    error_id=NayaResponseCodes.UNEXISTING_THERAPIST.code,
+                )
+
+            patient = AuthService.get_patient(self.session, patient_id=patient_id)
+            if patient is None:
+                NayaHttpResponse.not_found(
+                    data={
+                        "message": NayaResponseCodes.UNEXISTING_PATIENT.detail,
+                        "providedValue": str(patient_id),
+                    },
+                    error_id=NayaResponseCodes.UNEXISTING_PATIENT.code,
+                )
+            if not AuthService.connection_exists(
+                self.session,
+                therapist_id=therapist.id,
+                patient_id=patient.id,
+            ):
+                NayaHttpResponse.bad_request(
+                    data={
+                        "message": NayaResponseCodes.UNEXISTING_CONNECTION.detail,
+                        "providedValue": {
+                            "therapist_id": str(therapist.id),
+                            "patient_id": str(patient.id),
+                        },
+                    },
+                    error_id=NayaResponseCodes.UNEXISTING_CONNECTION.code,
+                )
+            TherapistService.delete_connection(
+                self.session,
+                therapist_id=therapist.id,
+                patient_id=patient.id,
+            )
+            patient.is_connected = False
+            self.session.add(patient)
+            self.session.commit()
+
+            return NayaHttpResponse.no_content()
+
+        except HTTPException as e:
+            raise e
         except Exception:
             NayaHttpResponse.internal_error()
