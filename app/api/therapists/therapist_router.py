@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 
 from app.api.therapists.therapist_controller import TherapistController
@@ -8,6 +9,7 @@ from app.api.therapists.therapist_schema import (
 )
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
+from app.api.auth.auth_dependencies import get_current_therapist_id
 
 
 therapist_router = APIRouter()
@@ -36,14 +38,13 @@ async def create_therapist(therapist_data: TherapistCreateSchema, session: Sessi
 
 
 @therapist_router.put("/disconnect-patient")
-async def disconnect_patient(request: DisconnectPatientRequest, session: SessionDep):
-    try:
-        controller = TherapistController(session=session)
-        return await controller.disconnect_patient(
-            therapist_id=request.id_therapist,
-            patient_id=request.id_patient,
-        )
-    except HTTPException as e:
-        raise e
-    except Exception:
-        raise
+async def disconnect_patient(
+    request: DisconnectPatientRequest,
+    session: SessionDep,
+    therapist_id: UUID = Depends(get_current_therapist_id),
+):
+    controller = TherapistController(session=session)
+    return await controller.disconnect_patient(
+        therapist_id=therapist_id,
+        patient_id=request.id_patient,
+    )

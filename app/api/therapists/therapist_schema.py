@@ -19,7 +19,6 @@ class TherapistResponseSchema(UserResponseSchema):
 
 class DisconnectPatientRequest(BaseModel):
     id_patient: UUID
-    id_therapist: UUID  # si obtienes el terapeuta del token, elimínalo
 
     class Config:
         alias_generator = to_camel

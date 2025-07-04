@@ -112,7 +112,7 @@ class TherapistController:
         except Exception:
             NayaHttpResponse.internal_error()
 
-    async def disconnect_patient(self, *, therapist_id: UUID, patient_id: UUID):
+    async def disconnect_patient(self, therapist_id: UUID, patient_id: UUID):
         try:
             therapist = await TherapistService.get_therapist_by_id(
                 therapist_id=therapist_id, session=self.session
