@@ -92,7 +92,7 @@ async def connect_therapist(request: ConnectionCodeRequest, session: SessionDep)
     try:
         auth_controller = AuthController(session=session)
         return await auth_controller.connect_therapist(
-            patient_id=request.id_patient,
+            token=request.token,
             code=request.code,
         )
     except HTTPException as e:

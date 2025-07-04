@@ -16,7 +16,7 @@ from app.api.users.user_service import UserService
 from app.api.auth.auth_service import AuthService
 from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
 from app.utils.email import EmailService
-from app.utils.security import get_user_token, verify_password
+from app.utils.security import get_user_token, verify_password, decode_token
 
 from .auth_model import VerificationCodeModel, VerificationCodePasswordResetModel
 
@@ -269,8 +269,11 @@ class AuthController:
         except Exception as e:
             NayaHttpResponse.internal_error()
 
-    async def connect_therapist(self, *, patient_id: UUID, code: str):
+    async def connect_therapist(self, *, token: str, code: str):
         therapist = AuthService.get_therapist_by_code(self.session, code=code)
+        decoded = decode_token(token)
+        if decoded:
+            user_id = decoded.get("sub") 
         if not therapist:
             NayaHttpResponse.bad_request(
                 data={
@@ -280,12 +283,12 @@ class AuthController:
                 error_id=NayaResponseCodes.UNEXISTING_CODE.code,
             )
 
-        patient = AuthService.get_patient(self.session, patient_id=patient_id)
+        patient = AuthService.get_patient_by_user_id(self.session, user_id=user_id)
         if not patient:
             NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.UNEXISTING_PATIENT.detail,
-                    "providedValue": {"patient_id": patient_id},
+                    "providedValue": {"patient_id": patient.id},
                 },
                 error_id=NayaResponseCodes.UNEXISTING_PATIENT.code,
             )
