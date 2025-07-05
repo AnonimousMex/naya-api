@@ -10,6 +10,7 @@ from app.api.therapists.therapist_schema import (
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
 from app.api.auth.auth_dependencies import get_current_therapist_id
+from app.api.patients.patient_schema import ListPatientResponseSchema
 
 
 therapist_router = APIRouter()
@@ -48,3 +49,16 @@ async def disconnect_patient(
         therapist_id=therapist_id,
         patient_id=request.id_patient,
     )
+
+
+@therapist_router.get(
+    "/therapist/list-patients",
+    response_model=NayaResponseModel[list[ListPatientResponseSchema]],
+)
+async def list_patients(
+    session: SessionDep,
+    therapist_id: UUID = Depends(get_current_therapist_id),
+):
+    controller = TherapistController(session=session)
+    patients = await controller.list_patients(therapist_id=therapist_id)
+    return NayaHttpResponse.ok(data=jsonable_encoder(patients))

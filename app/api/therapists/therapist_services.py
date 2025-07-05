@@ -4,6 +4,9 @@ from app.api.auth.auth_model import ConnectionModel
 from app.api.therapists.therapist_model import TherapistModel
 from app.api.users.user_model import UserModel
 from app.core.http_response import NayaHttpResponse
+from app.api.patients.patient_model import PatientModel
+from app.api.patients.patient_schema import ListPatientResponseSchema
+from typing import List
 
 
 class TherapistService:
@@ -38,3 +41,17 @@ class TherapistService:
         if conn:
             session.delete(conn)
             session.commit()
+
+    @staticmethod
+    async def list_patients_by_therapist(
+        therapist_id, session
+    ) -> list[ListPatientResponseSchema]:
+        statement = select(PatientModel).join(
+            ConnectionModel, ConnectionModel.patient_id == PatientModel.id
+        ).where(ConnectionModel.therapist_id == therapist_id)
+        results = session.exec(statement).all()
+        return [ListPatientResponseSchema(
+            patient_id=patient.id,
+            name=patient.user.name,
+            animal_id=patient.animal_id
+        ) for patient in results]
