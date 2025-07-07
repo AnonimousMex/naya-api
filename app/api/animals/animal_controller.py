@@ -23,11 +23,18 @@ class AnimalController:
                     )
                 ).first()
             )
+            if happy_picture:
+                if isinstance(happy_picture, tuple):
+                    happy_picture_url = happy_picture[0]
+                else:
+                    happy_picture_url = happy_picture
+            else:
+                happy_picture_url = None
             result.append(AnimalResponseSchema(
-                id=str(animal.id),
+                animal_id=str(animal.id),
                 name=animal.name,
                 description=animal.description,
                 color_ui=animal.color_ui,
-                happy_profile_picture=happy_picture[0] if happy_picture else None
+                happy_profile_picture=happy_picture_url
             ))
         return result

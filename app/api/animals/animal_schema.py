@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class AnimalResponseSchema(BaseModel):
-    id: str
+    animal_id: str
     name: str
     description: str
     color_ui: str
