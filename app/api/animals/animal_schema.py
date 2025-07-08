@@ -6,4 +6,5 @@ class AnimalResponseSchema(BaseModel):
     name: str
     description: str
     color_ui: str
-    happy_profile_picture: Optional[str]
+    default_profile_picture: Optional[str]
+    default_emotion_profile_picture: Optional[str]
