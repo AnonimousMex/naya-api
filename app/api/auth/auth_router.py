@@ -106,10 +106,8 @@ async def select_profile_picture(request: SelectProfileRequest, session: Session
     try:
         auth_controller = AuthController(session=session)
         return await auth_controller.select_profile_picture(request)
-
     except HTTPException as e:
         raise e
-
     except Exception as e:
         raise e
 
