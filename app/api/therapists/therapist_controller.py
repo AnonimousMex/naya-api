@@ -165,3 +165,20 @@ class TherapistController:
             raise e
         except Exception:
             NayaHttpResponse.internal_error()
+
+    async def list_patients(self, therapist_id: UUID):
+        try:
+            patients = await TherapistService.list_patients_by_therapist(therapist_id, self.session)
+            if not patients:
+                return NayaHttpResponse.not_found(
+                    data={
+                        "message": NayaResponseCodes.NO_CONNECTED_PATIENTS.detail,
+                        "providedValue": str(therapist_id),
+                    },
+                    error_id=NayaResponseCodes.NO_CONNECTED_PATIENTS.code,
+                )
+            return patients
+        except HTTPException as e:
+            raise e
+        except Exception:
+            NayaHttpResponse.internal_error()

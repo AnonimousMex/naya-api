@@ -14,3 +14,10 @@ class PatientCreateSchema(UserCreateSchema):
 
 class PatientResponseSchema(UserResponseSchema):
     patient_id: UUID
+
+
+# Solo para listados: id, nombre y animal_id
+class ListPatientResponseSchema(BaseModel):
+    patient_id: UUID
+    name: str
+    animal_id: UUID | None = None
