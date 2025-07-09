@@ -39,7 +39,6 @@ class SelectProfileRequest(BaseModel):
 
 
 class ConnectionCodeRequest(BaseModel):
-    id_patient: UUID
     code: str
 
     class Config:
