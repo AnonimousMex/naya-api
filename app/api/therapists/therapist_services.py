@@ -3,7 +3,9 @@ from sqlmodel import Session, select
 from app.api.auth.auth_model import ConnectionModel
 from app.api.therapists.therapist_model import TherapistModel
 from app.api.users.user_model import UserModel
+from app.constants.response_codes import NayaResponseCodes
 from app.core.http_response import NayaHttpResponse
+from app.api.therapists.therapist_schema import TherapistListResponseSchema
 from app.api.patients.patient_model import PatientModel
 from app.api.patients.patient_schema import ListPatientResponseSchema
 from typing import List
@@ -41,6 +43,29 @@ class TherapistService:
         if conn:
             session.delete(conn)
             session.commit()
+
+    @staticmethod
+    async def list_verified_therapists(session) -> list:
+        statement = (
+            select(TherapistModel)
+            .join(UserModel, TherapistModel.user_id == UserModel.id)
+            .where(UserModel.is_verified == True)
+        )
+        results = session.exec(statement).all()
+        if not results:
+            NayaHttpResponse.not_found(
+                data={
+                    "message": NayaResponseCodes.NO_VERIFIED_THERAPISTS.detail,
+                },
+                error_id=NayaResponseCodes.NO_VERIFIED_THERAPISTS.code,
+            )
+        return [
+            TherapistListResponseSchema(
+                therapist_id=therapist.id,
+                name=therapist.user.name
+            )
+            for therapist in results
+        ]
 
     @staticmethod
     async def list_patients_by_therapist(

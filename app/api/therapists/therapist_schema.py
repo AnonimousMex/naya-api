@@ -23,3 +23,9 @@ class DisconnectPatientRequest(BaseModel):
     class Config:
         alias_generator = to_camel
         populate_by_name = True
+
+
+# Schema para listar terapeutas (solo id y nombre)
+class TherapistListResponseSchema(BaseModel):
+    therapist_id: UUID
+    name: str

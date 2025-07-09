@@ -30,6 +30,5 @@ class NayaResponseCodes:
         "E013", "Connection with this therapist already exists"
     )
     UNEXISTING_CONNECTION = create_response_code("E014", "Connection does not exist")
-    NO_CONNECTED_PATIENTS = create_response_code(
-        "E015", "No patients are connected to this therapist"
-    )
+    NO_VERIFIED_THERAPISTS = create_response_code( "E016", "No verified therapists found" )
+    NO_CONNECTED_PATIENTS = create_response_code("E015", "No patients are connected to this therapist")
