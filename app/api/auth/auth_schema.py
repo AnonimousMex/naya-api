@@ -39,7 +39,6 @@ class SelectProfileRequest(BaseModel):
 
 
 class ConnectionCodeRequest(BaseModel):
-    token: str
     code: str
 
     class Config:

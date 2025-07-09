@@ -1,5 +1,6 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
+from fastapi import Header
 
 from app.api.auth.auth_controller import AuthController
 
@@ -87,20 +88,23 @@ async def verify_code(request: VerificationRequest, session: SessionDep):
         raise e
 
 
-@auth_router.post("/connect-therapist")
-async def connect_therapist(request: ConnectionCodeRequest, session: SessionDep):
+@auth_router.post("/connect-patient-with-therapist")
+async def connect_therapist(
+    request: ConnectionCodeRequest,
+    session: SessionDep,
+    token: str = Header(..., alias="Authorization")
+):
     try:
         auth_controller = AuthController(session=session)
         return await auth_controller.connect_therapist(
-            token=request.token,
+            token=token,
             code=request.code,
         )
     except HTTPException as e:
         raise e
     except Exception as e:
         raise e
-
-
+    
 @auth_router.post("/select-profile")
 async def select_profile_picture(request: SelectProfileRequest, session: SessionDep):
     try:
