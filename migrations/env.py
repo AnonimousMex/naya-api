@@ -19,6 +19,8 @@ from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionMo
 from app.api.auth.auth_model import ConnectionModel
 from app.api.emotions.emotion_model import EmotionModel
 
+from app.api.emotions.emotion_description_model import EmotionDescriptionModel
+from app.api.situations.situation_model import SituationModel
 
 database_url = settings.DATABASE_URL
 
