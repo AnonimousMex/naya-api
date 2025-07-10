@@ -29,3 +29,5 @@ class NayaResponseCodes:
     CONNECTION_EXISTS = create_response_code(
         "E013", "Connection with this therapist already exists"
     )
+    APPOINTMENT_EXISTS = create_response_code("E018", "You already have an appointment scheduled for this date")
+    NO_APPOINTMENTS = create_response_code("E017", "No appointments were found for this therapist")

@@ -2,6 +2,8 @@ from uuid import UUID
 from typing import List
 from sqlmodel import Field, Relationship
 from app.core.base_model import BaseNayaModel
+from datetime import date, time, datetime
+from typing import Optional
 
 
 class TherapistModel(BaseNayaModel, table=True):
@@ -18,3 +20,15 @@ class TherapistModel(BaseNayaModel, table=True):
 
     user: "UserModel" = Relationship(back_populates="therapist")  # type: ignore
     connections: List["ConnectionModel"] = Relationship(back_populates="therapist")  # type: ignore
+
+class AppointmentModel(BaseNayaModel, table=True):
+    __tablename__ = "appointments"
+
+    therapist_id: UUID = Field(foreign_key="therapist.id")
+    patient_id: UUID = Field(foreign_key="patients.id")
+    date: date
+    time: time
+    status: bool = Field(default=True)
+    deleted_at: Optional[datetime] = Field(default=None)
+
+
