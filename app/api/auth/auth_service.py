@@ -286,39 +286,22 @@ class AuthService:
         stmt = select(TherapistModel).where(TherapistModel.code_conection == code)
         return session.exec(stmt).first()
 
+
     @staticmethod
-    def assign_animal_and_picture(
+    def assign_animal(
         session: Session,
         user_id: UUID,
-        id_picture: UUID,
         id_animal: UUID,
-        id_emotion: UUID,
-    ) -> PictureAnimalEmotionModel | None:
+    ) -> PatientModel | None:
         try:
-            picture_stmt = select(PictureModel).where(
-                PictureModel.id == id_picture, PictureModel.is_profile == True
-            )
-            picture = session.exec(picture_stmt).first()
-            if not picture:
-                return None
-
             patient_stmt = select(PatientModel).where(PatientModel.user_id == user_id)
             patient = session.exec(patient_stmt).first()
             if not patient:
                 return None
-
-            relation = PictureAnimalEmotionModel(
-                id_picture=id_picture, id_animal=id_animal, id_emotion=id_emotion
-            )
-            session.add(relation)
-
             patient.animal_id = id_animal
             session.add(patient)
-
             session.commit()
-            session.refresh(relation)
-
-            return relation
-
+            session.refresh(patient)
+            return patient
         except Exception:
             NayaHttpResponse.internal_error()

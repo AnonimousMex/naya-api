@@ -36,9 +36,7 @@ class ResendCode(BaseModel):
 
 class SelectProfileRequest(BaseModel):
     user_id: UUID
-    id_picture: UUID
     id_animal: UUID
-    id_emotion: UUID
 
     class Config:
         alias_generator = to_camel

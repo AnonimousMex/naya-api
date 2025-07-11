@@ -77,12 +77,10 @@ class AuthController:
 
     async def select_profile_picture(self, request: SelectProfileRequest):
         try:
-            relation = AuthService.assign_animal_and_picture(
+            relation = AuthService.assign_animal(
                 session=self.session,
                 user_id=request.user_id,
-                id_picture=request.id_picture,
                 id_animal=request.id_animal,
-                id_emotion=request.id_emotion,
             )
 
             if not relation:
