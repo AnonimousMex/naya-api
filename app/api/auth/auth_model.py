@@ -36,3 +36,9 @@ class VerificationCodePasswordResetModel(BaseVerificationCodeModel, table=True):
     __tablename__ = "verification_codes_password_reset"
 
     user: "UserModel" = Relationship(back_populates="verification_codes_password_reset")  # type: ignore
+
+
+class AdviceModel(BaseNayaModel, table=True):
+    __tablename__ = "advices"
+    title: str
+    description: str

@@ -20,11 +20,14 @@ class RequestPasswordChange(BaseModel):
         alias_generator = to_camel
         populate_by_name = True
 
+
 class ResetPasswordRequest(PasswordValidationMixin):
     email: EmailStr = Field(max_length=40)
+
     class config:
         alias_generator = to_camel
         populate_by_name = True
+
 
 class ResendCode(BaseModel):
     email: EmailStr = Field(max_length=40)
@@ -49,3 +52,11 @@ class ConnectionCodeRequest(BaseModel):
     class Config:
         alias_generator = to_camel
         populate_by_name = True
+
+
+class AdviceResponse(BaseModel):
+    id: UUID
+    title: str
+    description: str
+
+    model_config = {"from_attributes": True}
