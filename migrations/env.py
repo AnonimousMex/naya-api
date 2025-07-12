@@ -25,7 +25,7 @@ from app.api.games.game_model import GameModel
 from app.api.games.game_history_archivements_model import GameHistoryAchievementsModel
 from app.api.energies.energy_model import EnergyModel
 from app.api.advices.advice_model import AdviceModel
-from app.api.advices.advices_show import AdvicesShownModel
+from app.api.advices.advices_show_model import AdvicesShownModel
 from app.api.activities.activity_model import ActivityModel
 
 
