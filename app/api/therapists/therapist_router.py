@@ -73,7 +73,7 @@ async def cancel_appointment(request: EditAppointmentRequest, session: SessionDe
     try:
         therapist_controller = TherapistController(session=session)
 
-        return await therapist_controller.cancel_appointment(id= request.id)
+        return await therapist_controller.cancel_appointment(appointment_id= request.appointment_id)
 
     except HTTPException as e:
         raise e
@@ -122,7 +122,7 @@ async def reschedule_appointment(request: RescheduleAppointmentRequest, session:
         token = authorization.replace("Bearer ", "")
         therapist_controller = TherapistController(session=session)
 
-        return await therapist_controller.reschedule_appointment(token=token, id= request.id, date= request.date, time= request.time)
+        return await therapist_controller.reschedule_appointment(token=token, appointment_id= request.appointment_id, date= request.date, time= request.time)
 
     except HTTPException as e:
         raise e
@@ -139,7 +139,7 @@ async def reschedule_appointment(request: EditAppointmentRequest, session: Sessi
     try:
         therapist_controller = TherapistController(session=session)
 
-        return await therapist_controller.complete_appointment(id= request.id)
+        return await therapist_controller.complete_appointment(appointment_id= request.appointment_id)
 
     except HTTPException as e:
         raise e

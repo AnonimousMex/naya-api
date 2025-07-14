@@ -27,7 +27,7 @@ class AppointmentResponse(BaseModel):
     time: time
 
 class EditAppointmentRequest(BaseModel):
-    id: UUID
+    appointment_id: UUID
 
 class AppointmentListResponse(BaseModel):
     id: UUID
@@ -39,7 +39,7 @@ class AppointmentListRequest(BaseModel):
     token: str
     
 class RescheduleAppointmentRequest(BaseModel):
-    id: UUID
+    appointment_id: UUID
     date: date
     time: time
 

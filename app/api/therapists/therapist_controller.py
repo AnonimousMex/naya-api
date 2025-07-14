@@ -156,10 +156,10 @@ class TherapistController:
             raise NayaHttpResponse.internal_error()
     
     
-    async def cancel_appointment(self, id: UUID,) -> AppointmentResponse:
+    async def cancel_appointment(self, appointment_id: UUID,) -> AppointmentResponse:
         try:
             appointment =  TherapistService.cancel_appointment(
-                self.session, id = id
+                self.session, appointment_id = appointment_id
             )
             return NayaHttpResponse.no_content()
         except Exception as e:
@@ -190,7 +190,7 @@ class TherapistController:
         except Exception as e:
             raise e
           
-    async def reschedule_appointment(self, token: str, id: UUID, date: date, time: time) -> AppointmentResponse:
+    async def reschedule_appointment(self, token: str, appointment_id: UUID, date: date, time: time) -> AppointmentResponse:
         try:
             decoded = decode_token(token)
           
@@ -214,16 +214,16 @@ class TherapistController:
                 error_id=NayaResponseCodes.APPOINTMENT_EXISTS.code,
             )
             appointment =  TherapistService.reschedule_appointment(
-                self.session, id = id, date=date, time=time
+                self.session, appointment_id = appointment_id, date=date, time=time
             )
             return NayaHttpResponse.no_content()
         except Exception as e:
             raise e
         
-    async def complete_appointment(self, id: UUID,) -> AppointmentResponse:
+    async def complete_appointment(self, appointment_id: UUID,) -> AppointmentResponse:
         try:
             appointment =  TherapistService.complete_appointment(
-                self.session, id = id
+                self.session, appointment_id = appointment_id
             )
             return NayaHttpResponse.no_content()
         except Exception as e:

@@ -52,10 +52,10 @@ class TherapistService:
     
     @staticmethod
     def cancel_appointment(
-        session: Session, *, id: UUID
+        session: Session, *, appointment_id: UUID
     ) -> bool:
         stmt = select(AppointmentModel).where(
-            AppointmentModel.id == id
+            AppointmentModel.id == appointment_id
         )
         appointment = session.exec(stmt).first()
         appointment.status = False
@@ -85,10 +85,10 @@ class TherapistService:
     
     @staticmethod
     def reschedule_appointment(
-        session: Session, *, id: UUID, date: date, time: time
+        session: Session, *, appointment_id: UUID, date: date, time: time
     ) -> bool:
         stmt = select(AppointmentModel).where(
-            AppointmentModel.id == id
+            AppointmentModel.id == appointment_id
         )
         appointment = session.exec(stmt).first()
         appointment.date = date,
@@ -100,10 +100,10 @@ class TherapistService:
     
     @staticmethod
     def complete_appointment(
-        session: Session, *, id: UUID
+        session: Session, *, appointment_id: UUID
     ) -> bool:
         stmt = select(AppointmentModel).where(
-            AppointmentModel.id == id
+            AppointmentModel.id == appointment_id
         )
         appointment = session.exec(stmt).first()
         appointment.status = False
