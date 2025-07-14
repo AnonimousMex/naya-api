@@ -31,3 +31,6 @@ class NayaResponseCodes:
     )
     APPOINTMENT_EXISTS = create_response_code("E018", "You already have an appointment scheduled for this date")
     NO_APPOINTMENTS = create_response_code("E017", "No appointments were found for this therapist")
+    UNEXISTING_CONNECTION = create_response_code("E014", "Connection does not exist")
+    NO_VERIFIED_THERAPISTS = create_response_code( "E016", "No verified therapists found" )
+    NO_CONNECTED_PATIENTS = create_response_code("E015", "No patients are connected to this therapist")

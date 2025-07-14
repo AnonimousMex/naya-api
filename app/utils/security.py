@@ -68,14 +68,22 @@ def get_user_token(
     custom_id_key_name = (
         "patient_id" if user_type == UserRoles.PATIENT.value else "therapist_id"
     )
+    animal_id = None
+    if user_type == UserRoles.PATIENT.value and hasattr(user, "patient") and user.patient:
+        animal_id = str(user.patient.animal_id) if user.patient.animal_id else None
+
+    user_data = {
+        "email": user.email,
+        "user_id": str(user.id),
+        "name": user.name,
+        "user_type": user_type,
+        custom_id_key_name: str(patient_or_therapist_id),
+    }
+    if animal_id is not None:
+        user_data["animal_id"] = animal_id
+
     return create_access_token(
-        user_data={
-            "email": user.email,
-            "user_id": str(user.id),
-            "name": user.name,
-            "user_type": user_type,
-            custom_id_key_name: str(patient_or_therapist_id),
-        },
+        user_data=user_data,
         expires_delta=timedelta(days=2) if is_refresh else timedelta(hours=1),
         refresh_token=is_refresh,
     )

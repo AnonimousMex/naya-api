@@ -77,12 +77,10 @@ class AuthController:
 
     async def select_profile_picture(self, request: SelectProfileRequest):
         try:
-            relation = AuthService.assign_animal_and_picture(
+            relation = AuthService.assign_animal(
                 session=self.session,
                 user_id=request.user_id,
-                id_picture=request.id_picture,
                 id_animal=request.id_animal,
-                id_emotion=request.id_emotion,
             )
 
             if not relation:
@@ -161,6 +159,15 @@ class AuthController:
             raise e
 
         except Exception as e:
+            NayaHttpResponse.internal_error()
+
+    async def update_user_password(self, user_id: UUID, password: str):
+        try:
+            await AuthService.update_user_password(
+                user_id=user_id, password=password, session=self.session)
+            
+            return NayaHttpResponse.no_content()
+        except HTTPException:
             NayaHttpResponse.internal_error()
 
     async def resend_code(self, user: UserModel):
