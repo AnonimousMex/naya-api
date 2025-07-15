@@ -70,7 +70,7 @@ class TherapistController:
             await EmailService.send_conection_code_email(
                 to_name=user.name.capitalize(),
                 to_email=user.email,
-                verification_code=conection_code,
+                verification_code=conection_code.code_conection,
             )
 
             user_dump = UserResponseSchema.model_validate(user).model_dump()

@@ -10,7 +10,7 @@ from app.core.http_response import NayaHttpResponse
 from app.constants.response_codes import NayaResponseCodes
 from app.constants.user_constants import UserRoles, VerificationModels
 
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.api.users.user_service import UserService
 
 

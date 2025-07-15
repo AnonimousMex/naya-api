@@ -1,6 +1,6 @@
 from sqlmodel import Session
 from app.api.patients.patient_model import PatientModel
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.core.http_response import NayaHttpResponse
 
 

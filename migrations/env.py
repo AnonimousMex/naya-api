@@ -8,7 +8,7 @@ from alembic import context
 from sqlmodel import SQLModel
 from app.core.settings import settings
 
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.api.therapists.therapist_model import TherapistModel
 from app.api.animals.animal_model import AnimalModel
 from app.api.patients.patient_model import PatientModel
@@ -19,10 +19,10 @@ from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionMo
 from app.api.auth.auth_model import ConnectionModel
 from app.api.emotions.emotion_model import EmotionModel
 
-from app.api.emotions.emotion_description_model import EmotionDescriptionModel
-from app.api.situations.situation_model import SituationModel
-from app.api.games.game_model import GameModel
-from app.api.games.game_history_archivements_model import GameHistoryAchievementsModel
+from app.api.emotions.emotion_model import EmotionDescriptionModel
+from app.api.emotions.emotion_model import SituationModel
+from app.models.game_model import GameModel
+from app.models.game_history_archivements_model import GameHistoryAchievementsModel
 from app.api.energies.energy_model import EnergyModel
 from app.api.advices.advice_model import AdviceModel
 from app.api.advices.advices_show_model import AdvicesShownModel

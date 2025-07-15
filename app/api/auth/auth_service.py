@@ -10,7 +10,7 @@ from app.api.patients.patient_model import PatientModel
 from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.api.pictures.picture_model import PictureModel
 from app.api.therapists.therapist_model import TherapistModel
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.constants.user_constants import VerificationModels
 from app.utils.security import get_password_hash
 

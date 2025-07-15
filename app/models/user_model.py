@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import TYPE_CHECKING, Optional, List
 
 from sqlmodel import Field, Relationship
 from pydantic import EmailStr
@@ -9,6 +9,8 @@ from app.utils.regex import Regex
 
 from app.constants.user_constants import UserRoles
 
+if TYPE_CHECKING:
+    from app.models.game_history_archivements_model import GameHistoryAchievementsModel
 
 class UserModel(BaseNayaModel, table=True):
     __tablename__ = "users"
@@ -23,4 +25,4 @@ class UserModel(BaseNayaModel, table=True):
     therapist: Optional["TherapistModel"] = Relationship(back_populates="user")  # type: ignore
     verification_code: "VerificationCodeModel" = Relationship(back_populates="user")  # type: ignore
     verification_codes_password_reset: "VerificationCodePasswordResetModel" = Relationship(back_populates="user")  # type: ignore
-    # game_history_achivements: List["GameHistoryAchievementsModel"]  = Relationship(back_populates="user") # type: ignore
+    game_history_achivements: List["GameHistoryAchievementsModel"]  = Relationship(back_populates="user") # type: ignore
