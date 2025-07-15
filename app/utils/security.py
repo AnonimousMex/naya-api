@@ -11,7 +11,7 @@ from app.core.settings import settings
 
 from app.constants.user_constants import UserRoles
 
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 
 ACCESS_TOKEN_EXPIRY = 3600
 

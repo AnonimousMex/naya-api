@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 from app.api.auth.auth_model import ConnectionModel
 from app.api.therapists.therapist_model import TherapistModel
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.constants.response_codes import NayaResponseCodes
 from app.core.http_response import NayaHttpResponse
 from uuid import UUID

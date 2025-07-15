@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import Union
 from uuid import UUID
 
@@ -9,12 +10,16 @@ from app.core.http_response import NayaHttpResponse
 from app.constants.response_codes import NayaResponseCodes
 from app.constants.user_constants import UserRoles, VerificationModels
 
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.api.users.user_service import UserService
 
 
 from app.api.auth.auth_service import AuthService
-from app.api.auth.auth_schema import VerificationRequest, SelectProfileRequest
+from app.api.auth.auth_schema import (
+    AdviceResponse,
+    VerificationRequest,
+    SelectProfileRequest,
+)
 from app.utils.email import EmailService
 from app.utils.security import get_user_token, verify_password, decode_token
 
@@ -164,8 +169,9 @@ class AuthController:
     async def update_user_password(self, user_id: UUID, password: str):
         try:
             await AuthService.update_user_password(
-                user_id=user_id, password=password, session=self.session)
-            
+                user_id=user_id, password=password, session=self.session
+            )
+
             return NayaHttpResponse.no_content()
         except HTTPException:
             NayaHttpResponse.internal_error()
@@ -280,7 +286,7 @@ class AuthController:
         therapist = AuthService.get_therapist_by_code(self.session, code=code)
         decoded = decode_token(token)
         if decoded:
-            user_id = decoded.get("sub") 
+            user_id = decoded.get("sub")
         if not therapist:
             NayaHttpResponse.bad_request(
                 data={
@@ -322,3 +328,11 @@ class AuthController:
         self.session.commit()
 
         return NayaHttpResponse.no_content()
+
+    async def get_daily_advice(self) -> AdviceResponse:
+        advice = AuthService.get_shared_daily_advice(self.session)
+        return AdviceResponse(
+            id=advice.id,
+            title=advice.title,
+            description=advice.description,
+        )

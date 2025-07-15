@@ -1,10 +1,12 @@
 from uuid import UUID
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Header
 
 from app.api.auth.auth_controller import AuthController
 
+from app.api.auth.auth_dependencies import get_current_patient_id
 from app.api.auth.auth_schema import (
+    AdviceResponse,
     RequestPasswordChange,
     ResendCode,
     ConnectionCodeRequest,
@@ -88,6 +90,7 @@ async def verify_code(request: VerificationRequest, session: SessionDep):
     except Exception as e:
         raise e
 
+
 @auth_router.put("/password-reset")
 async def reset_password(request: ResetPasswordRequest, session: SessionDep):
     try:
@@ -96,8 +99,7 @@ async def reset_password(request: ResetPasswordRequest, session: SessionDep):
         user = await auth_controller.get_current_user(email=request.email)
 
         return await auth_controller.update_user_password(
-            user_id= user.id,
-            password=request.password
+            user_id=user.id, password=request.password
         )
 
     except HTTPException as e:
@@ -105,11 +107,12 @@ async def reset_password(request: ResetPasswordRequest, session: SessionDep):
     except Exception as e:
         raise e
 
+
 @auth_router.post("/connect-patient-with-therapist")
 async def connect_therapist(
     request: ConnectionCodeRequest,
     session: SessionDep,
-    token: str = Header(..., alias="Authorization")
+    token: str = Header(..., alias="Authorization"),
 ):
     try:
         auth_controller = AuthController(session=session)
@@ -121,7 +124,8 @@ async def connect_therapist(
         raise e
     except Exception as e:
         raise e
-    
+
+
 @auth_router.post("/select-profile")
 async def select_profile_picture(request: SelectProfileRequest, session: SessionDep):
     try:
@@ -170,3 +174,9 @@ async def login(session: SessionDep, form_data: LoginFormDataDep):
 
     except Exception as e:
         raise e
+
+
+@auth_router.get("/daily", response_model=AdviceResponse)
+async def get_daily_advice(session: SessionDep):
+    controller = AuthController(session)
+    return await controller.get_daily_advice()

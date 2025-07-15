@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from random import randint
+from random import choice, randint
 from typing import Union
 from uuid import UUID
 
@@ -10,11 +10,12 @@ from app.api.patients.patient_model import PatientModel
 from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionModel
 from app.api.pictures.picture_model import PictureModel
 from app.api.therapists.therapist_model import TherapistModel
-from app.api.users.user_model import UserModel
+from app.models.user_model import UserModel
 from app.constants.user_constants import VerificationModels
 from app.utils.security import get_password_hash
 
 from .auth_model import (
+    AdviceModel,
     ConnectionModel,
     VerificationCodeModel,
     VerificationCodePasswordResetModel,
@@ -186,10 +187,7 @@ class AuthService:
             NayaHttpResponse.internal_error()
 
     @staticmethod
-    async def update_user_password(
-        session: Session, user_id: UUID, password: str
-
-    ):
+    async def update_user_password(session: Session, user_id: UUID, password: str):
         try:
             hashed_password = get_password_hash(password)
             statement = select(UserModel).where(UserModel.id == user_id)
@@ -252,11 +250,13 @@ class AuthService:
     @staticmethod
     def get_patient(session: Session, *, patient_id: UUID) -> PatientModel | None:
         return session.get(PatientModel, patient_id)
-    
+
     @staticmethod
-    def get_patient_by_user_id(session: Session, *, user_id: UUID) -> PatientModel | None:
+    def get_patient_by_user_id(
+        session: Session, *, user_id: UUID
+    ) -> PatientModel | None:
         return session.query(PatientModel).filter_by(user_id=user_id).first()
-    
+
     @staticmethod
     def get_therapist_by_user_id(session: Session, *, user_id: UUID) -> TherapistModel | None:
         return session.query(TherapistModel).filter_by(user_id=user_id).first()
@@ -286,7 +286,6 @@ class AuthService:
         stmt = select(TherapistModel).where(TherapistModel.code_conection == code)
         return session.exec(stmt).first()
 
-
     @staticmethod
     def assign_animal(
         session: Session,
@@ -305,3 +304,12 @@ class AuthService:
             return patient
         except Exception:
             NayaHttpResponse.internal_error()
+
+    @staticmethod
+    def get_shared_daily_advice(session: Session) -> AdviceModel:
+        return AuthService.get_random_advice(session)
+
+    @staticmethod
+    def get_random_advice(session: Session) -> AdviceModel:
+        all_advices = session.exec(select(AdviceModel)).all()
+        return choice(all_advices)

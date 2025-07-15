@@ -1,8 +1,10 @@
-
 from datetime import datetime
-from typing import List
+from typing import TYPE_CHECKING, List
 from sqlmodel import Field, Relationship
 from app.core.base_model import BaseNayaModel
+
+if TYPE_CHECKING:
+    from app.models.game_history_archivements_model import GameHistoryAchievementsModel
 
 class GameModel(BaseNayaModel, table=True):
     __tablename__="games"
@@ -13,4 +15,3 @@ class GameModel(BaseNayaModel, table=True):
     deleted_at: datetime = Field(default_factory=None, nullable=True)
 
     game_history_achivements: List["GameHistoryAchievementsModel"]  = Relationship(back_populates="game")  # type: ignore
-    

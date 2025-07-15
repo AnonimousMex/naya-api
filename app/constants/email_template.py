@@ -29,7 +29,7 @@ def new_user_verification_code_email_tempalte(
                         <table role="presentation" width="630" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff; border-radius: 30px; margin-bottom: 60px;">
                             <tr>
                                 <td style="padding:20px;">
-                                    <img src="https://i.ibb.co/PzrhddT/prueba-Logo.png" alt="MindfulTOC Logo" width="300" style="display: block; margin: auto; ">
+                                    <img src="https://i.ibb.co/kgWDj7nX/layer1.png" alt="NAYÁ  Logo" width="300" style="display: block; margin: auto; ">
                                 </td>
                             </tr>
                             <tr>
@@ -89,19 +89,19 @@ def new_user_verification_code_email_tempalte(
                         <table role="footer" width="630" cellpadding="0" cellspacing="0" border="0"">
                             <tr>
                                 <td style="text-align: center;">
-                                    <img src="https://i.ibb.co/pPKB5tx/prueba-Corazon.png" alt="Heart" style="width: 400px; height: 300px; margin-bottom: -120px; ">
+                                    <img src="https://i.ibb.co/HWsphSX/suenaalgo-imagen.png" alt="Heart" style="width: 400px; height: 300px; margin-bottom: -20px; ">
                                 </td>
                             </tr>
                             <tr>
                                 <td style="text-align: center; background-color: #fff; border-radius: 100% 100% 0px 0px; padding: 20px 50px 20px 50px; position: relative;">
-                                    <img src="https://i.ibb.co/PzrhddT/prueba-Logo.png" alt="MindfulTOC Logo" width="170" style="display: block; margin: auto; margin-bottom: 20px;">
+                                    <img src="https://i.ibb.co/kgWDj7nX/layer1.png" alt="NAYÁ Logo" width="170" style="display: block; margin: auto; margin-bottom: 20px;">
                                     <span style="font-size: 12px; color: #928D86;">¡Gracias por confiar en nosotros!</span><br>
                                     <span style="font-size: 12px; color: #928D86;">Este correo es parte de nuestro compromiso para ofrecerte una experiencia única.</span><br>
                                     <span style="font-size: 12px; color: #928D86;">Si tienes dudas o necesitas más información, contáctanos</span><br>
-                                    <span style="font-size: 12px; color: #928D86;">en <a href="support@mindfultoc.com" style="color: #b067d2;">support@mindfultoc.com</a>.</span>
+                                    <span style="font-size: 12px; color: #928D86;">en <a href="support@naya.com" style="color: #b067d2;">support@naya.com</a>.</span>
                                     <hr style="width: 500px; margin-top: 40px; margin-bottom: 40px; border: 0.5px solid rgb(237, 236, 236); ">
-                                    <span style="font-size: 12px; color: #928D86;">MindfulTOC, construyendto bienestar emocional.</span><br>
-                                    <span style="font-size: 12px; color: #928D86;">Derechos reservados © 2024 MindfulTOC</span>
+                                    <span style="font-size: 12px; color: #928D86;">NAYÁ, construyendto bienestar emocional.</span><br>
+                                    <span style="font-size: 12px; color: #928D86;">Derechos reservados © 2024 NAYÁ</span>
                                 </td>
                             </tr>
                         </table>

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
-from .user_model import UserModel
+from ...models.user_model import UserModel
 from .user_schema import UserCreateSchema
 
 from app.constants.user_constants import UserRoles
