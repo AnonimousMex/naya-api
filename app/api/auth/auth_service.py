@@ -258,8 +258,8 @@ class AuthService:
         return session.query(PatientModel).filter_by(user_id=user_id).first()
     
     @staticmethod
-    def get_patient_id(session: Session, *, patient_id: UUID) -> PatientModel | None:
-        return session.get(PatientModel, patient_id)
+    def get_therapist_by_user_id(session: Session, *, user_id: UUID) -> TherapistModel | None:
+        return session.query(TherapistModel).filter_by(user_id=user_id).first()
 
     @staticmethod
     def connection_exists(

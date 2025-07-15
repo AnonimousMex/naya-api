@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from sqlmodel import Session
+from datetime import date, time
 
 from app.api.auth.auth_service import AuthService
 from app.api.therapists.therapist_services import TherapistService
@@ -15,9 +16,11 @@ from app.api.users.user_service import UserService
 from app.api.users.user_controller import UserController
 from app.api.users.user_schema import UserCreateSchema, UserResponseSchema
 from app.utils.email import EmailService
+from app.utils.security import decode_token
+from fastapi.encoders import jsonable_encoder
 
 
-from .therapist_schema import TherapistResponseSchema, TherapistCreateSchema
+from .therapist_schema import TherapistResponseSchema, TherapistCreateSchema, AppointmentRequest, AppointmentResponse
 
 
 class TherapistController:
@@ -111,6 +114,120 @@ class TherapistController:
 
         except Exception:
             NayaHttpResponse.internal_error()
+
+    async def create_appointment(
+        self, token: str, patient_id: UUID, date: date, time: time 
+    ) -> AppointmentResponse:
+        try:
+            decoded = decode_token(token)
+          
+            if decoded:
+                user_id = decoded.get("sub")
+            
+            therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
+
+            if TherapistService.appointment_exists(
+            self.session, therapist_id=therapist.id, date= date, time=time
+            ):
+                NayaHttpResponse.bad_request(
+                data={
+                    "message": NayaResponseCodes.APPOINTMENT_EXISTS.detail,
+                    "providedValue": {
+                        "therapist_id": str(therapist.id),
+                        "patient_id": str(patient_id),
+                        "date": str(date),
+                        "time": str(time)
+                    },
+                },
+                error_id=NayaResponseCodes.APPOINTMENT_EXISTS.code,
+            )
+            appointment = await TherapistService.schedule_appointment(
+                self.session, therapist_id=therapist.id , patient_id=patient_id, date=date, time=time
+            )
+            
+            appointment_data = jsonable_encoder(appointment)
+
+            return AppointmentResponse(**appointment_data)
+
+        except HTTPException as e:
+            raise e
+
+        except Exception as e:
+            raise NayaHttpResponse.internal_error()
+    
+    
+    async def cancel_appointment(self, appointment_id: UUID,) -> AppointmentResponse:
+        try:
+            appointment =  TherapistService.cancel_appointment(
+                self.session, appointment_id = appointment_id
+            )
+            return NayaHttpResponse.no_content()
+        except Exception as e:
+            raise NayaHttpResponse.internal_error() 
+
+    async def list_appointments(self, token: str, patient_id: UUID | None = None) -> AppointmentResponse:
+        try:
+
+            decoded = decode_token(token)
+
+            if decoded:
+                user_id = decoded.get("sub")
+            
+            therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
+
+            appointments = await TherapistService.list_appointments( self.session, therapist_id=therapist.id, patient_id=patient_id)
+            
+            if not appointments:
+                return NayaHttpResponse.not_found(
+                    data={
+                        "message": NayaResponseCodes.NO_APPOINTMENTS.detail,
+                        "providedValue": str(therapist.id),
+                    },
+                    error_id=NayaResponseCodes.NO_APPOINTMENTS.code,
+                )
+            return appointments
+            
+        except Exception as e:
+            raise e
+          
+    async def reschedule_appointment(self, token: str, appointment_id: UUID, date: date, time: time) -> AppointmentResponse:
+        try:
+            decoded = decode_token(token)
+          
+            if decoded:
+                user_id = decoded.get("sub")
+            
+            therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
+
+            if TherapistService.appointment_exists(
+            self.session, therapist_id=therapist.id, date= date, time=time
+            ):
+                NayaHttpResponse.bad_request(
+                data={
+                    "message": NayaResponseCodes.APPOINTMENT_EXISTS.detail,
+                    "providedValue": {
+                        "therapist_id": str(therapist.id),
+                        "date": str(date),
+                        "time": str(time)
+                    },
+                },
+                error_id=NayaResponseCodes.APPOINTMENT_EXISTS.code,
+            )
+            appointment =  TherapistService.reschedule_appointment(
+                self.session, appointment_id = appointment_id, date=date, time=time
+            )
+            return NayaHttpResponse.no_content()
+        except Exception as e:
+            raise e
+        
+    async def complete_appointment(self, appointment_id: UUID,) -> AppointmentResponse:
+        try:
+            appointment =  TherapistService.complete_appointment(
+                self.session, appointment_id = appointment_id
+            )
+            return NayaHttpResponse.no_content()
+        except Exception as e:
+            raise NayaHttpResponse.internal_error() 
 
     async def disconnect_patient(self, therapist_id: UUID, patient_id: UUID):
         try:
