@@ -10,8 +10,8 @@ class MemocionService:
         stmt = (
             select(SituationModel)
             .options(selectinload(SituationModel.emotion))
-            .order_by(func.random())  # orden aleatorio
-            .limit(6)  # máximo 6 resultados
+            .order_by(func.random())
+            .limit(6)
         )
         situations = session.exec(stmt).all()
 
