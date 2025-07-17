@@ -31,8 +31,7 @@ class EnergyController:
             decode=decode_token(token)
             if decode:
                 user_id = decode.get("sub")
-                print(user_id)
-            if not await EnergyService.consume_energy(self.session, user_id=user_id):
+            if await EnergyService.consume_energy(self.session, user_id=user_id) == False:
                 NayaHttpResponse.bad_request(
                     data={
                         "message": NayaResponseCodes.NO_MORE_LIVES.detail,
@@ -40,5 +39,5 @@ class EnergyController:
                     error_id=NayaResponseCodes.NO_MORE_LIVES.code,
                 )
             return NayaHttpResponse.no_content()
-        except HTTPException:
-            NayaHttpResponse.internal_error()
+        except HTTPException as e:
+            raise e

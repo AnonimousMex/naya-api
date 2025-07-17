@@ -16,7 +16,7 @@ class EnergyService:
                 session.add(new_energies)
                 session.commit()
                 session.refresh(new_energies)
-                return
+                return new_energies
                 
             return energies
         except Exception as e:
