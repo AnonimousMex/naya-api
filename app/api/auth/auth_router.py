@@ -178,5 +178,8 @@ async def login(session: SessionDep, form_data: LoginFormDataDep):
 
 @auth_router.get("/daily", response_model=AdviceResponse)
 async def get_daily_advice(session: SessionDep):
-    controller = AuthController(session)
-    return await controller.get_daily_advice()
+    try:
+        controller = AuthController(session)
+        return await controller.get_daily_advice()
+    except HTTPException as e:
+        raise e

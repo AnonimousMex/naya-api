@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.energies.energy_router import energy_router
 from app.api.patients.patient_router import patients_router
 from app.api.therapists.therapist_router import therapist_router
 from app.api.animals.animal_router import animals_router
@@ -34,5 +35,6 @@ async def http_exception_handler(_, exc: HTTPException):
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
 app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
 app.include_router(animals_router, prefix=settings.API_V1, tags=["Animals"])
+app.include_router(energy_router, prefix=settings.API_V1, tags=["Energy"])
 
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
