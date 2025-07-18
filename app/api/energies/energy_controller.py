@@ -1,6 +1,5 @@
 
 from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
 from sqlmodel import Session
 
 from app.api.energies.energy_schema import EnergyReponseSchema
