@@ -18,6 +18,7 @@ class EnergyController:
             decode = decode_token(token)
             if decode:
                 user_id = decode.get("sub")
+            await EnergyService.recharge_energy(self.session, user_id=user_id)
             energies = await EnergyService.get_current_energies(self.session, user_id=user_id)
             return EnergyReponseSchema(
                 current_energy=energies.current_energy
