@@ -26,27 +26,25 @@ class EnergyService:
     async def recharge_energy(
         session: Session, user_id: UUID
     ):
-        #En pruebas print()
         statement = select(EnergyModel).where(EnergyModel.user_id == user_id)
         energy = session.exec(statement).first()
         if not energy:
             raise ValueError("User energy configuration not found")
 
         now = datetime.now(timezone.utc)
+        if energy.last_charge.tzinfo is None or energy.last_charge.tzinfo.utcoffset(energy.last_charge) is None:
+            energy.last_charge = energy.last_charge.replace(tzinfo=timezone.utc)
         elapsed_time = now - energy.last_charge
         minutes_elapsed = elapsed_time.total_seconds() / 60
+        print(minutes_elapsed)
 
-        # Calcular energía a recargar
         energy_to_add = int(minutes_elapsed // energy.recharge_time)
-        
         if energy_to_add > 0:
-            # Actualizar energía
             energy.current_energy = min(
                 energy.max_energy,
                 energy.current_energy + energy_to_add
             )
-            
-            # Actualizar tiempo de última recarga
+
             energy.last_charge = energy.last_charge + timedelta(
                 minutes=energy_to_add * energy.recharge_time
             )
