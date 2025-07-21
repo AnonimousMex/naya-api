@@ -5,6 +5,7 @@ from app.core.base_model import BaseNayaModel
 
 class AdviceModel(BaseNayaModel, table=True):
     __tablename__="advices"
+    __table_args__ = {'extend_existing': True}
 
     title: str = Field(max_length=20, nullable=False)
     description: str = Field(max_length=80, nullable=False)
