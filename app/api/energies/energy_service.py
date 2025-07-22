@@ -60,6 +60,8 @@ class EnergyService:
             energy = session.exec(statement).first()
             if energy.current_energy == 0:
                 return False
+            if energy.current_energy == energy.max_energy:
+                energy.last_charge = datetime.now(timezone.utc)
             energy.current_energy = energy.current_energy - 1
             session.add(energy)
             session.commit()
