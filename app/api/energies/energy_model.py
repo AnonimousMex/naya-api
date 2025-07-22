@@ -12,5 +12,5 @@ class EnergyModel(BaseNayaModel, table=True):
     current_energy: int = Field(nullable=False, default=3, ge=0)
     max_energy: int = Field(nullable=False, default=3)
     last_charge: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    recharge_time: int = Field(default=30)
+    recharge_time: int = Field(default=15)
 
