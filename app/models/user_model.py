@@ -26,3 +26,4 @@ class UserModel(BaseNayaModel, table=True):
     verification_code: "VerificationCodeModel" = Relationship(back_populates="user")  # type: ignore
     verification_codes_password_reset: "VerificationCodePasswordResetModel" = Relationship(back_populates="user")  # type: ignore
     game_history_achivements: List["GameHistoryAchievementsModel"]  = Relationship(back_populates="user") # type: ignore
+    test: List["TestModel"] = Relationship(back_populates="user") # type: ignore
