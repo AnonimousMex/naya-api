@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.games.detectiveEmociones.detective_router import detective_router
 from app.api.games.memociones.memociones_router import memociones_router
 from app.api.energies.energy_router import energy_router
 from app.api.patients.patient_router import patients_router
@@ -40,5 +41,5 @@ app.include_router(animals_router, prefix=settings.API_V1, tags=["Animals"])
 app.include_router(memociones_router, prefix=settings.API_V1, tags=["MEMOCIONES"])
 app.include_router(game_router, prefix=settings.API_V1, tags=["Games"])
 app.include_router(energy_router, prefix=settings.API_V1, tags=["Energy"])
-
+app.include_router(detective_router, prefix=settings.API_V1, tags=["Detective"])
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
