@@ -29,7 +29,7 @@ class EnergyService:
         statement = select(EnergyModel).where(EnergyModel.user_id == user_id)
         energy = session.exec(statement).first()
         if not energy:
-            raise ValueError("User energy configuration not found")
+            return ValueError("User energy configuration not found")
 
         now = datetime.now(timezone.utc)
         if energy.last_charge.tzinfo is None or energy.last_charge.tzinfo.utcoffset(energy.last_charge) is None:
