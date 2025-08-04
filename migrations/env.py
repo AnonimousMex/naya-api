@@ -19,9 +19,9 @@ from app.api.pictures.picture_animal_emotion_model import PictureAnimalEmotionMo
 from app.api.auth.auth_model import ConnectionModel
 from app.api.emotions.emotion_model import EmotionModel
 
-from app.api.test.test_veredict_model import TestVeredictModel
+from app.api.emotions.emotion_model import TestVeredictModel
 from app.api.emotions.emotion_model import VeredictModel
-from app.api.test.testAnswer_model import TestAnswerModel
+from app.api.emotions.emotion_model import TestAnswerModel
 from app.api.emotions.emotion_model import AnswerModel
 from app.api.test.questions_model import QuestionModel
 from app.api.emotions.emotion_model import StoryModel

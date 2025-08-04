@@ -51,7 +51,6 @@ class UserService:
 
             return user if user else False
         except Exception as e:
-            print(e)
             NayaHttpResponse.internal_error()
 
     @staticmethod

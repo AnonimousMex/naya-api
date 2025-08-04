@@ -20,10 +20,12 @@ class EnergyController:
                 user_id = decode.get("sub")
             await EnergyService.recharge_energy(self.session, user_id=user_id)
             energies = await EnergyService.get_current_energies(self.session, user_id=user_id)
+
             return EnergyReponseSchema(
                 current_energy=energies.current_energy
             )
-        except HTTPException:
+        except HTTPException as e:
+            raise e
             NayaHttpResponse.internal_error()
     
     async def consume_user_energy(self, token: str):

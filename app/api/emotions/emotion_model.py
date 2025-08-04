@@ -71,6 +71,14 @@ class AnswerModel(BaseNayaModel, table=True):
     emotion: EmotionModel = Relationship(back_populates="answer") # type: ignore
     testAnswer: List["TestAnswerModel"] = Relationship(back_populates="answer") # type: ignore
 
+class TestAnswerModel(BaseNayaModel, table=True):
+    __tablename__= "test_answer"
+
+    test_id: UUID = Field(foreign_key="tests.id", nullable=False)
+    answer_id: UUID = Field(foreign_key="answers.id", nullable=False)
+
+    test: "TestModel" = Relationship(back_populates="testAnswer") # type: ignore
+    answer: "AnswerModel" = Relationship(back_populates="testAnswer") # type: ignore
 class VeredictModel(BaseNayaModel, table=True):
     __tablename__= "veredicts"
 
@@ -81,3 +89,12 @@ class VeredictModel(BaseNayaModel, table=True):
 
     emotion: EmotionModel = Relationship(back_populates="veredict") # type: ignore
     testVeredict: List["TestVeredictModel"] = Relationship(back_populates="veredict") # type: ignore
+
+class TestVeredictModel(BaseNayaModel, table=True):
+    __tablename__= "test_veredict"
+
+    test_id: UUID = Field(foreign_key="tests.id", nullable=False)
+    veredict_id: UUID = Field(foreign_key="veredicts.id", nullable=False)
+
+    test: "TestModel" = Relationship(back_populates="testVeredict") # type: ignore
+    veredict: "VeredictModel" = Relationship(back_populates="testVeredict") # type: ignore
