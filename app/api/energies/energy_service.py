@@ -17,7 +17,7 @@ class EnergyService:
                 session.commit()
                 session.refresh(new_energies)
                 return new_energies
-                
+            print(energies)
             return energies
         except Exception as e:
             raise e
@@ -26,32 +26,35 @@ class EnergyService:
     async def recharge_energy(
         session: Session, user_id: UUID
     ):
-        statement = select(EnergyModel).where(EnergyModel.user_id == user_id)
-        energy = session.exec(statement).first()
-        if not energy:
-            return ValueError("User energy configuration not found")
+        try:
+            statement = select(EnergyModel).where(EnergyModel.user_id == user_id)
+            energy = session.exec(statement).first()
+            if not energy:
+                return
 
-        now = datetime.now(timezone.utc)
-        if energy.last_charge.tzinfo is None or energy.last_charge.tzinfo.utcoffset(energy.last_charge) is None:
-            energy.last_charge = energy.last_charge.replace(tzinfo=timezone.utc)
-        elapsed_time = now - energy.last_charge
-        minutes_elapsed = elapsed_time.total_seconds() / 60
-        print(minutes_elapsed)
+            now = datetime.now(timezone.utc)
+            if energy.last_charge.tzinfo is None or energy.last_charge.tzinfo.utcoffset(energy.last_charge) is None:
+                energy.last_charge = energy.last_charge.replace(tzinfo=timezone.utc)
+            elapsed_time = now - energy.last_charge
+            minutes_elapsed = elapsed_time.total_seconds() / 60
 
-        energy_to_add = int(minutes_elapsed // energy.recharge_time)
-        if energy_to_add > 0:
-            energy.current_energy = min(
-                energy.max_energy,
-                energy.current_energy + energy_to_add
-            )
+            energy_to_add = int(minutes_elapsed // energy.recharge_time)
+            if energy_to_add > 0:
+                energy.current_energy = min(
+                    energy.max_energy,
+                    energy.current_energy + energy_to_add
+                )
 
-            energy.last_charge = energy.last_charge + timedelta(
-                minutes=energy_to_add * energy.recharge_time
-            )
-            session.add(energy)
-            session.commit()
-        
-        return
+                energy.last_charge = energy.last_charge + timedelta(
+                    minutes=energy_to_add * energy.recharge_time
+                )
+                session.add(energy)
+                session.commit()
+            
+            return
+        except Exception as e:
+            raise e
+            NayaHttpResponse.internal_error()
     
     @staticmethod
     async def consume_energy(session: Session, user_id:UUID):
