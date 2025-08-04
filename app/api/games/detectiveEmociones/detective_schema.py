@@ -1,15 +1,16 @@
 from typing import List
 from uuid import UUID
+
+from pydantic import BaseModel
 from app.core.base_model import BaseNayaModel
 
-class AnswerOptions(BaseNayaModel):
+class AnswerOptions(BaseModel):
     id: UUID
     name: str
+    isCorrect: bool
 
-class DetectiveSituationsResponse(BaseNayaModel):
+class DetectiveSituationsResponse(BaseModel):
     id: UUID
     title: str
     story: str
-    emotion_id: UUID
-    emotion_name: str
     options: List[AnswerOptions]

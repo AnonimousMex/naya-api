@@ -19,10 +19,8 @@ class DetectiveController:
                     id=sit["id"],
                     title=sit["title"],
                     story=sit["story"],
-                    emotion_id=sit["emotion_id"],
-                    emotion_name=sit["emotion_name"],
                     options=[
-                        AnswerOptions(id=opt["id"], name=opt["name"])
+                        AnswerOptions(id=opt["id"], name=opt["name"], isCorrect=opt["isCorrect"])
                         for opt in sit["options"]
                     ]
                 )

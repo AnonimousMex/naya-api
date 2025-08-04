@@ -1,3 +1,4 @@
+import random
 from sqlmodel import select, func
 from sqlalchemy.orm import selectinload
 from app.api.emotions.emotion_model import EmotionModel, SituationModel
@@ -39,29 +40,32 @@ class DetectiveService:
             situations = session.exec(query).all()
             result = []
             for situation in situations:
+                correct_emotion = session.exec(
+                    select(EmotionModel)
+                    .where(EmotionModel.id == situation.emotion_id)
+                ).first()
                 # Obtener 3 emociones distintas (excluyendo la de la situación actual)
-                options_query = (
+                options_query = session.exec(
                     select(EmotionModel)
                     .where(EmotionModel.id != situation.emotion_id)
                     .order_by(func.random())
                     .limit(3)
-                )
-                options = session.exec(options_query).all()
+                ).all()
 
-                emotion_name = session.exec(select(EmotionModel).where(EmotionModel.id == situation.emotion_id)).first()
+                all_options = [
+                    {"id": correct_emotion.id, "name": correct_emotion.name, "isCorrect": True}
+                ] + [
+                    {"id": emotion.id, "name": emotion.name, "isCorrect": False} 
+                    for emotion in options_query
+                ]
+                random.shuffle(all_options)
+                
                 # Construir el objeto de respuesta
                 situation_dict = {
                     "id": situation.id,
                     "title": situation.title,
                     "story": situation.story,
-                    "emotion_id": situation.emotion_id,
-                    "emotion_name": emotion_name.name,
-                    "options": [
-                        {
-                            "id": emotion.id,
-                            "name": emotion.name,
-                        } for emotion in options
-                    ]
+                    "options": all_options
                 }
                 result.append(situation_dict)
             return result
