@@ -9,6 +9,7 @@ from app.api.test.test_router import test_router
 from app.api.therapists.therapist_router import therapist_router
 from app.api.animals.animal_router import animals_router
 from app.api.games.game_router import game_router
+from app.api.games.y_ese_ruido.y_ese_ruido_router import y_ese_ruido_router
 
 from .core.settings import settings
 
@@ -42,4 +43,6 @@ app.include_router(memociones_router, prefix=settings.API_V1, tags=["MEMOCIONES"
 app.include_router(game_router, prefix=settings.API_V1, tags=["Games"])
 app.include_router(energy_router, prefix=settings.API_V1, tags=["Energy"])
 app.include_router(test_router, prefix=settings.API_V1, tags=["Test"])
+app.include_router(y_ese_ruido_router, prefix=settings.API_V1, tags=["YEseRuido"])
+
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
