@@ -2,7 +2,6 @@ from typing import List
 from uuid import UUID
 
 from pydantic import BaseModel
-from app.core.base_model import BaseNayaModel
 
 class AnswerOptions(BaseModel):
     id: UUID
@@ -13,4 +12,5 @@ class DetectiveSituationsResponse(BaseModel):
     id: UUID
     title: str
     story: str
+    image:str | None
     options: List[AnswerOptions]

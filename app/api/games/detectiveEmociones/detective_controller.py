@@ -19,6 +19,7 @@ class DetectiveController:
                     id=sit["id"],
                     title=sit["title"],
                     story=sit["story"],
+                    image=sit["image"],
                     options=[
                         AnswerOptions(id=opt["id"], name=opt["name"], isCorrect=opt["isCorrect"])
                         for opt in sit["options"]

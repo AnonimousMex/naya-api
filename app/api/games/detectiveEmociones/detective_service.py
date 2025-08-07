@@ -65,6 +65,7 @@ class DetectiveService:
                     "id": situation.id,
                     "title": situation.title,
                     "story": situation.story,
+                    "image": situation.image_url,
                     "options": all_options
                 }
                 result.append(situation_dict)

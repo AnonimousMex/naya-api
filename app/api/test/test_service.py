@@ -188,7 +188,6 @@ class TestService:
                 .group_by(AnswerModel.emotion_id, EmotionModel.name)
             )
             answers = session.exec(count_typeanswers).all()
-            print(answers)
             result = []
             for answer in answers:
                 percentage = answer.total * 20.0
