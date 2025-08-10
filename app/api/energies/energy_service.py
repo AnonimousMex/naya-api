@@ -17,7 +17,6 @@ class EnergyService:
                 session.commit()
                 session.refresh(new_energies)
                 return new_energies
-            print(energies)
             return energies
         except Exception as e:
             raise e
@@ -52,8 +51,7 @@ class EnergyService:
                 session.commit()
             
             return
-        except Exception as e:
-            raise e
+        except Exception:
             NayaHttpResponse.internal_error()
     
     @staticmethod
