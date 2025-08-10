@@ -15,6 +15,7 @@ class StoriesResponse(BaseModel):
     id: UUID
     title: str
     story: str
+    image_url: str
     question_id: UUID
     question: str
     answers: List[AnswersList]
