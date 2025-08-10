@@ -74,6 +74,7 @@ class TestService:
                     "id": situation.id,
                     "title": situation.title,
                     "story": situation.stage_1,
+                    "image_url": situation.image_url,
                     "question_id": question.id,
                     "question": question.question,
                     "answers": [
