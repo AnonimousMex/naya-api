@@ -26,6 +26,7 @@ class TestController:
                     id=story["id"],
                     title=story["title"],
                     story=story["story"],
+                    image_url=story["image_url"],
                     question_id=story["question_id"],
                     question=story["question"],
                     answers=[

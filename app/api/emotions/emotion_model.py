@@ -34,6 +34,7 @@ class SituationModel(BaseNayaModel, table=True):
     title: str = Field(nullable=False)
     story: str = Field(max_length=500, nullable=False)
     emotion_id: UUID = Field(foreign_key="emotions.id" ,nullable=False)
+    image_url: str = Field(nullable=True, default=None)
 
     emotion: EmotionModel = Relationship(back_populates="situations") # type: ignore
 

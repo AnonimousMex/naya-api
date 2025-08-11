@@ -10,8 +10,8 @@ from app.core.http_response import NayaHttpResponse, NayaResponseModel
 game_router = APIRouter()
 
 @game_router.get(
-        "/games",
-        response_model=NayaResponseModel[list[GameListResponse]]
+    "/games",
+    response_model=NayaResponseModel[list[GameListResponse]]
 )
 async def list_games(
     session: SessionDep,
