@@ -4,11 +4,12 @@ from fastapi.encoders import jsonable_encoder
 from app.core.database import SessionDep
 from app.api.patients.patient_contoller import PatientController
 from app.api.therapists.therapist_services import TherapistService
+from app.api.parents.parent_controller import ParentController
 from app.api.auth.auth_dependencies import get_current_patient_id
 
 from .patient_schema import PatientCreateSchema, PatientResponseSchema
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
-from app.api.therapists.therapist_schema import TherapistListResponseSchema
+from app.api.parents.parent_schema import TherapistSchema
 
 
 patients_router = APIRouter()
@@ -35,15 +36,17 @@ async def create_patient(patient_data: PatientCreateSchema, session: SessionDep)
 
 @patients_router.get(
     "/parent/list-therapists",
-    response_model=NayaResponseModel[list[TherapistListResponseSchema]],
+    response_model=NayaResponseModel[list[TherapistSchema]],
 )
 async def list_verified_therapists(
     session: SessionDep,
     patient_id=Depends(get_current_patient_id),
 ):
     try:
-        therapists = await TherapistService.list_verified_therapists(session)
-        return NayaHttpResponse.ok(data=jsonable_encoder(therapists))
+        parent_controller = ParentController(session=session)
+        therapists = await parent_controller.list_therapists()
+        therapists_data = [therapist.model_dump() for therapist in therapists]
+        return NayaHttpResponse.ok(data=therapists_data)
     except HTTPException as e:
         raise e
     except Exception as e:

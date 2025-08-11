@@ -28,6 +28,8 @@ from app.api.emotions.emotion_model import StoryModel
 from app.api.emotions.emotion_model import EmotionResultsModel
 from app.api.test.test_model import TestModel
 from app.api.emotions.emotion_model import EmotionDescriptionModel
+from app.api.specialties.specialty_model import SpecialtyModel, SpecialtyTherapistModel
+from app.api.professional_experience.professional_experience_model import ProfessionalExperienceModel
 from app.api.emotions.emotion_model import SituationModel
 from app.models.game_model import GameModel
 from app.models.game_history_archivements_model import GameHistoryAchievementsModel
@@ -35,6 +37,8 @@ from app.api.energies.energy_model import EnergyModel
 from app.api.advices.advice_model import AdviceModel
 from app.api.advices.advices_show_model import AdvicesShownModel
 from app.api.activities.activity_model import ActivityModel
+from app.api.specialties.specialty_model import SpecialtyModel, SpecialtyTherapistModel
+from app.api.professional_experience.professional_experience_model import ProfessionalExperienceModel
 
 
 database_url = settings.DATABASE_URL

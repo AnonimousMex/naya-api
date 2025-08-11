@@ -1,9 +1,13 @@
 from uuid import UUID
-from typing import List
+from typing import List, TYPE_CHECKING
 from sqlmodel import Field, Relationship
 from app.core.base_model import BaseNayaModel
 from datetime import date, time, datetime
 from typing import Optional
+
+if TYPE_CHECKING:
+    from app.api.specialties.specialty_model import SpecialtyModel
+    from app.api.professional_experience.professional_experience_model import ProfessionalExperienceModel
 
 
 class TherapistModel(BaseNayaModel, table=True):
@@ -20,6 +24,10 @@ class TherapistModel(BaseNayaModel, table=True):
 
     user: "UserModel" = Relationship(back_populates="therapist")  # type: ignore
     connections: List["ConnectionModel"] = Relationship(back_populates="therapist")  # type: ignore
+    
+    # Relaciones agregadas después de crear las migraciones
+    # specialties: List["SpecialtyModel"] = Relationship(back_populates="therapists")
+    # professional_experiences: List["ProfessionalExperienceModel"] = Relationship(back_populates="therapist")
 
 class AppointmentModel(BaseNayaModel, table=True):
     __tablename__ = "appointments"
