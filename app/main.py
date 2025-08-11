@@ -15,6 +15,7 @@ from .core.settings import settings
 
 from app.api.patients.patient_router import patients_router
 from .api.auth.auth_router import auth_router
+from .api.badges.badge_router import badge_router
 
 
 app = FastAPI(
@@ -44,5 +45,6 @@ app.include_router(game_router, prefix=settings.API_V1, tags=["Games"])
 app.include_router(energy_router, prefix=settings.API_V1, tags=["Energy"])
 app.include_router(test_router, prefix=settings.API_V1, tags=["Test"])
 app.include_router(y_ese_ruido_router, prefix=settings.API_V1, tags=["YEseRuido"])
+app.include_router(badge_router, prefix=settings.API_V1, tags=["Badges"])
 
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
