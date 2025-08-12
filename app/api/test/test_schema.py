@@ -4,7 +4,6 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic.alias_generators import to_camel
-from sqlmodel import Double
 
 
 class AnswersList(BaseModel):
@@ -27,6 +26,7 @@ class TestStoriesResponse(BaseModel):
 class AnswersResponse(BaseModel):
     story: str
     answer: str
+    emotion: str
 
 class TestDetailsReponse(BaseModel):
     date: str
@@ -38,7 +38,10 @@ class EmotionPercentageResponse(BaseModel):
     emotion_name: str
     percentage: float
 
-
+class TestsResponse(BaseModel):
+    id: UUID
+    created_at: datetime
+    user_id: UUID
 
 class PostAnswerRequest(BaseModel):
     test_id: UUID
@@ -55,8 +58,14 @@ class AnswersRequest(BaseModel):
         alias_generator = to_camel
         populate_by_name = True
 
-class TestDetailsRequest(BaseModel):
+class ListTestRequest (BaseModel):
     patient_id: UUID
+
+    class config:
+        alias_generator = to_camel
+        populate_by_name = True
+
+class TestDetailsRequest(BaseModel):
     test_id: UUID
 
     class config:

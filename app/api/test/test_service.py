@@ -135,18 +135,20 @@ class TestService:
             result = []
             for answer in answers:
                 answer_info = (
-                    select(AnswerModel.answer_text, StoryModel.stage_1)
+                    select(AnswerModel.answer_text, StoryModel.stage_1, EmotionModel.name)
                     .where(AnswerModel.id == answer.answer_id)
+                    .join(EmotionModel, EmotionModel.id == AnswerModel.emotion_id)
                     .join(QuestionModel, QuestionModel.id == AnswerModel.question_id)
                     .join(StoryModel, StoryModel.id == QuestionModel.story_id)
                 )
                 query_answer_info= session.exec(answer_info).first()
                 if query_answer_info:
-                    answer_text, story_text = query_answer_info
+                    answer_text, story_text, emotion_name = query_answer_info
 
                 answers_dict = {
                     "story": story_text,
-                    "answer": answer_text
+                    "answer": answer_text,
+                    "emotion": emotion_name
                 }
 
                 result.append(answers_dict)
@@ -155,14 +157,16 @@ class TestService:
             raise e
         
     @staticmethod
-    async def test_details(session: Session, test_id: UUID, user_id: UUID):
+    async def test_details(session: Session, test_id: UUID):
         try:
             statement = (
                 select(TestModel.created_at, UserModel.name)
-                .where(TestModel.id == test_id, TestModel.user_id == user_id)
+                .where(TestModel.id == test_id)
                 .join(UserModel, UserModel.id == TestModel.user_id)
             )
             test_details = session.exec(statement).first()
+            if test_details is None:
+                return False
             created_at, patient_name = test_details
             month_names = {
                 1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
@@ -211,5 +215,17 @@ class TestService:
                 .join(EmotionModel, EmotionModel.id == EmotionResultsModel.emotion_id)
                 ).all()
             return results if results else False
+        except Exception as e:
+            raise e
+        
+    @staticmethod
+    async def get_list_tests(session: Session, user_id: UUID):
+        try:
+            statement = (
+                select(TestModel.id, TestModel.created_at, TestModel.user_id)
+                .where(TestModel.user_id == user_id)
+            )
+            query = session.exec(statement).all()
+            return query
         except Exception as e:
             raise e
