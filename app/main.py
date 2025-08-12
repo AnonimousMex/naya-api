@@ -18,6 +18,7 @@ from app.api.parents.parent_router import parent_router
 from .core.settings import settings
 
 from .api.auth.auth_router import auth_router
+from .api.badges.badge_router import badge_router
 
 
 app = FastAPI(
@@ -48,6 +49,7 @@ app.include_router(energy_router, prefix=settings.API_V1, tags=["Energy"])
 app.include_router(test_router, prefix=settings.API_V1, tags=["Test"])
 app.include_router(detective_router, prefix=settings.API_V1, tags=["Detective"])
 app.include_router(y_ese_ruido_router, prefix=settings.API_V1, tags=["YEseRuido"])
+app.include_router(badge_router, prefix=settings.API_V1, tags=["Badges"])
 app.include_router(specialty_router, prefix=settings.API_V1, tags=["Specialties"])
 app.include_router(professional_experience_router, prefix=settings.API_V1, tags=["Professional Experience"])
 app.include_router(parent_router, prefix=settings.API_V1, tags=["Parents"])

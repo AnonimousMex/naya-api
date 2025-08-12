@@ -37,4 +37,5 @@ class NayaResponseCodes:
     NO_MORE_LIVES = create_response_code("E019", "User has no more lives")
     DUPLICATE_RELATIONSHIP = create_response_code("E0030", "This response has already been recorded")
     TEST_COMPLETE = create_response_code("E0031", "Test has been complete")
-    UNEXISTING_TEST = create_response_code("E032", "Test does not exist ")
+    BADGE_ALREADY_UNLOCKED = create_response_code("E032", "Badge already unlocked")
+    UNEXISTING_TEST = create_response_code("E033", "Test does not exist ")
