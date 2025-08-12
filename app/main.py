@@ -38,6 +38,10 @@ app.add_middleware(
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
+# main.py (abajo)
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
