@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 
 from app.api.test.test_controller import TestController
-from app.api.test.test_schema import AnswersRequest, AnswersResponse, EmotionPercentageResponse , PostAnswerRequest, TestDetailsReponse, TestDetailsRequest, TestStoriesResponse
+from app.api.test.test_schema import AnswersRequest, AnswersResponse, EmotionPercentageResponse, ListTestRequest , PostAnswerRequest, TestDetailsReponse, TestDetailsRequest, TestStoriesResponse, TestsResponse
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
 
@@ -37,7 +37,7 @@ async def post_answer(session: SessionDep, request: PostAnswerRequest):
     except Exception as e:
         raise e
     
-@test_router.get(
+@test_router.post(
         "/list-answers",
         response_model=NayaResponseModel[List[AnswersResponse]]
 )
@@ -51,7 +51,7 @@ async def list_answers(session: SessionDep, request: AnswersRequest ):
     except Exception as e:
         raise e
 
-@test_router.get(
+@test_router.post(
         "/test-details",
         response_model=NayaResponseModel[TestDetailsReponse]
 )
@@ -65,7 +65,7 @@ async def test_detail(session: SessionDep, request: TestDetailsRequest):
     except Exception as e:
         raise e
     
-@test_router.get(
+@test_router.post(
         "/percentage-answers",
         response_model=NayaResponseModel[List[EmotionPercentageResponse]]
 )
@@ -74,6 +74,21 @@ async def answers_details(session: SessionDep, request: AnswersRequest):
         test_conteoller = TestController(session=session)
         data = await test_conteoller.percentage_answers(request=request)
         return NayaHttpResponse.ok(data=jsonable_encoder(data))
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise e
+    
+@test_router.post(
+        "/list-test",
+        response_model=NayaResponseModel[List[TestsResponse]]
+)
+async def list_test(
+    session: SessionDep, request: ListTestRequest):
+    try:
+        test_controller = TestController(session=session)
+        tests = await test_controller.list_test(request)
+        return NayaHttpResponse.ok(data=jsonable_encoder(tests))
     except HTTPException as e:
         raise e
     except Exception as e:

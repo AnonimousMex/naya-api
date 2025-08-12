@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.api.auth.auth_service import AuthService
-from app.api.test.test_schema import AnswersList, AnswersRequest, EmotionPercentageResponse, PostAnswerRequest, StoriesResponse, TestDetailsReponse, TestDetailsRequest, TestStoriesResponse
+from app.api.test.test_schema import AnswersList, AnswersRequest, EmotionPercentageResponse, ListTestRequest, PostAnswerRequest, StoriesResponse, TestDetailsReponse, TestDetailsRequest, TestStoriesResponse, TestsResponse
 from app.api.test.test_service import TestService
 from app.constants.response_codes import NayaResponseCodes
 from app.core.http_response import NayaHttpResponse
@@ -87,10 +87,6 @@ class TestController:
 
     async def test_detail(self, request: TestDetailsRequest):
         try:
-            user_id = await AuthService.get_user_id_by_patient_id(
-                session=self.session, 
-                patient_id=request.patient_id
-            )
             count_answers = await TestService.is_test_complete(
                 session=self.session, 
                 test_id=request.test_id
@@ -98,10 +94,17 @@ class TestController:
             data = await TestService.test_details(
                 session= self.session, 
                 test_id= request.test_id, 
-                user_id= user_id
             )
+            if data is False:
+                return NayaHttpResponse.not_found(
+                    data={
+                        "message": NayaResponseCodes.UNEXISTING_TEST.detail,
+                    },
+                    error_id=NayaResponseCodes.UNEXISTING_TEST.code,
+                )
             return TestDetailsReponse(date=data['date'], total_answers=count_answers, patient_name=data['name'],)
-        except Exception:
+        except Exception as e:
+            raise e
             NayaHttpResponse.internal_error()
 
     async def percentage_answers(self, request: AnswersRequest):
@@ -114,6 +117,26 @@ class TestController:
                 ]
                 return data
             await TestService.create_answer_details(session= self.session, test_id= request.test_id)
-            return await TestService.get_percentage_results(session = self.session, test_id = request.test_id)
+            new_results = await TestService.get_percentage_results(session = self.session, test_id = request.test_id)
+            if new_results:
+                data = [
+                    EmotionPercentageResponse(emotion_id=item[0], emotion_name=item[1], percentage=item[2])
+                    for item in new_results  
+                ]
+                return data
         except Exception as e:
             raise e
+    
+    async def list_test(self, request: ListTestRequest):
+        try:
+            userId = await AuthService.get_user_id_by_patient_id(session=self.session, patient_id=request.patient_id)
+            test = await TestService.get_list_tests(session=self.session, user_id= userId)
+
+            if test:
+                data = [
+                    TestsResponse(id=item[0], created_at=item[1], user_id=item[2])
+                    for item in test
+                ]
+                return data
+        except Exception as e:
+            NayaHttpResponse.internal_error()
