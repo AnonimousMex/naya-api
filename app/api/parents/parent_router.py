@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
-from app.api.auth.auth_dependencies import get_current_patient_id
+from app.auth.auth_dependencies import get_current_patient_id
 from app.api.parents.parent_controller import ParentController
 from app.api.parents.parent_schema import TherapistSchema
 from typing import List

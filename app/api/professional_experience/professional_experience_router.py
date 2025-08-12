@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends
 from app.core.database import SessionDep
-from ..auth.auth_dependencies import get_current_therapist_id
+from ...auth.auth_dependencies import get_current_therapist_id
 from app.api.professional_experience.professional_experience_service import ProfessionalExperienceService
 from app.api.professional_experience.professional_experience_schema import (
     ProfessionalExperienceCreate,

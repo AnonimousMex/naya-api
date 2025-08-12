@@ -4,7 +4,7 @@ from fastapi import Header
 
 from app.api.auth.auth_controller import AuthController
 
-from app.api.auth.auth_dependencies import get_current_patient_id
+from app.auth.auth_dependencies import get_current_patient_id
 from app.api.auth.auth_schema import (
     AdviceResponse,
     RequestPasswordChange,

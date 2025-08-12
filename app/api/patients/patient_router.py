@@ -5,7 +5,7 @@ from app.core.database import SessionDep
 from app.api.patients.patient_contoller import PatientController
 from app.api.therapists.therapist_services import TherapistService
 from app.api.parents.parent_controller import ParentController
-from app.api.auth.auth_dependencies import get_current_patient_id
+from app.auth.auth_dependencies import get_current_patient_id
 
 from .patient_schema import PatientCreateSchema, PatientResponseSchema
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
