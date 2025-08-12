@@ -11,10 +11,12 @@ from app.api.therapists.therapist_router import therapist_router
 from app.api.animals.animal_router import animals_router
 from app.api.games.game_router import game_router
 from app.api.games.y_ese_ruido.y_ese_ruido_router import y_ese_ruido_router
+from app.api.specialties.specialty_router import specialty_router
+from app.api.professional_experience.professional_experience_router import professional_experience_router
+from app.api.parents.parent_router import parent_router
 
 from .core.settings import settings
 
-from app.api.patients.patient_router import patients_router
 from .api.auth.auth_router import auth_router
 
 
@@ -46,5 +48,8 @@ app.include_router(energy_router, prefix=settings.API_V1, tags=["Energy"])
 app.include_router(test_router, prefix=settings.API_V1, tags=["Test"])
 app.include_router(detective_router, prefix=settings.API_V1, tags=["Detective"])
 app.include_router(y_ese_ruido_router, prefix=settings.API_V1, tags=["YEseRuido"])
+app.include_router(specialty_router, prefix=settings.API_V1, tags=["Specialties"])
+app.include_router(professional_experience_router, prefix=settings.API_V1, tags=["Professional Experience"])
+app.include_router(parent_router, prefix=settings.API_V1, tags=["Parents"])
 
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])

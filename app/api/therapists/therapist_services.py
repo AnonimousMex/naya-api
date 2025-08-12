@@ -83,20 +83,49 @@ class TherapistService:
 
     @staticmethod
     async def list_appointments(
-        session, therapist_id, patient_id
+        session, therapist_id, patient_id=None
     ) -> list[AppointmentModel]:
-
-        statement = select(AppointmentModel).where(AppointmentModel.therapist_id == therapist_id, AppointmentModel.patient_id==patient_id, AppointmentModel.deleted_at== None, AppointmentModel.status==True)
-        results = session.exec(statement).all()
-        response = [
-            AppointmentListResponse(
-                id=appointment.id,
-                patient_id=appointment.patient_id,
-                date=appointment.date,
-                time=appointment.time,
+        
+        if patient_id:
+            statement = select(AppointmentModel).where(
+                AppointmentModel.therapist_id == therapist_id, 
+                AppointmentModel.patient_id == patient_id, 
+                AppointmentModel.deleted_at == None, 
+                AppointmentModel.status == True
             )
-        for appointment in results
-        ]
+            results = session.exec(statement).all()
+            response = [
+                AppointmentListResponse(
+                    id=appointment.id,
+                    patient_id=appointment.patient_id,
+                    date=appointment.date,
+                    time=appointment.time,
+                )
+                for appointment in results
+            ]
+        else:
+            statement = select(AppointmentModel, PatientModel, UserModel).join(
+                PatientModel, AppointmentModel.patient_id == PatientModel.id
+            ).join(
+                UserModel, PatientModel.user_id == UserModel.id
+            ).where(
+                AppointmentModel.therapist_id == therapist_id,
+                AppointmentModel.deleted_at == None, 
+                AppointmentModel.status == True
+            )
+            results = session.exec(statement).all()
+            response = [
+                AppointmentListResponse(
+                    id=appointment.id,
+                    patient_id=appointment.patient_id,
+                    date=appointment.date,
+                    time=appointment.time,
+                    patient_name=user.name,
+                    patient_animal_id=str(patient.animal_id) if patient.animal_id else None
+                )
+                for appointment, patient, user in results
+            ]
+        
         return response    
     
     @staticmethod
