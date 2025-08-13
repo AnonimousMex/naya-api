@@ -30,8 +30,8 @@ class UserService:
             session.refresh(new_user)
 
             return new_user
-        except Exception:
-            NayaHttpResponse.internal_error()
+        except Exception as e:
+            raise e
 
     @staticmethod
     async def get_user_by_id(user_id: UUID, session: Session) -> UserModel:

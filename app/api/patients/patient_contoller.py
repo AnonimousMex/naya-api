@@ -59,4 +59,4 @@ class PatientController:
             raise e
 
         except Exception as e:
-            NayaHttpResponse.internal_error(e)
+            raise e
