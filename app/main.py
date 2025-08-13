@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+import traceback
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -53,7 +54,16 @@ def debug_db():
         "database": url.database,
         "sslmode": "require" if "sslmode=require" in str(url) else "?"
     }
-
+@app.middleware("http")
+async def log_exceptions(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as e:
+        traceback.print_exc()  # se imprime en logs de Render
+        return JSONResponse(
+            status_code=500,
+            content={"error": "internal_server_error", "detail": str(e)},
+        )
 
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
 app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
