@@ -19,6 +19,7 @@ from .core.settings import settings
 
 from .api.auth.auth_router import auth_router
 from .api.badges.badge_router import badge_router
+from sqlalchemy.engine.url import make_url
 
 
 app = FastAPI(
@@ -42,6 +43,16 @@ async def http_exception_handler(_, exc: HTTPException):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+@app.get("/debug/db")
+def debug_db():
+    url = make_url(settings.DATABASE_URL_EFFECTIVE)
+    return {
+        "driver": url.drivername,
+        "host": url.host,
+        "port": url.port,
+        "database": url.database,
+        "sslmode": "require" if "sslmode=require" in str(url) else "?"
+    }
 
 
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])

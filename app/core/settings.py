@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: str | None = None
     SUPABASE_ANON_KEY: str | None = None
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
+    DATABASE_URL: str
 
     @property
     def DATABASE_URL_EFFECTIVE(self):
