@@ -2,6 +2,9 @@ import traceback
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlmodel import Session
+from app.core.database import engine
 
 from app.api.games.detectiveEmociones.detective_router import detective_router
 from app.api.games.memociones.memociones_router import memociones_router
@@ -54,16 +57,23 @@ def debug_db():
         "database": url.database,
         "sslmode": "require" if "sslmode=require" in str(url) else "?"
     }
-@app.middleware("http")
-async def log_exceptions(request: Request, call_next):
-    try:
-        return await call_next(request)
-    except Exception as e:
-        traceback.print_exc()  # se imprime en logs de Render
-        return JSONResponse(
-            status_code=500,
-            content={"error": "internal_server_error", "detail": str(e)},
-        )
+
+@app.get("/debug/db/tables")
+def debug_tables():
+    with Session(engine) as s:
+        rows = s.exec(text("""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+        """)).all()
+    return {"tables": [r[0] for r in rows]}
+
+@app.get("/debug/db/ping")
+def debug_ping():
+    with Session(engine) as s:
+        now = s.exec(text("select now()")).one()
+    return {"ok": True, "now": str(now[0])}
 
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
 app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
