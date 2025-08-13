@@ -1,10 +1,6 @@
-import traceback
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
-from sqlmodel import Session
-from app.core.database import engine
 
 from app.api.games.detectiveEmociones.detective_router import detective_router
 from app.api.games.memociones.memociones_router import memociones_router
@@ -23,7 +19,6 @@ from .core.settings import settings
 
 from .api.auth.auth_router import auth_router
 from .api.badges.badge_router import badge_router
-from sqlalchemy.engine.url import make_url
 
 
 app = FastAPI(
@@ -47,33 +42,7 @@ async def http_exception_handler(_, exc: HTTPException):
 @app.get("/health")
 def health():
     return {"status": "ok"}
-@app.get("/debug/db")
-def debug_db():
-    url = make_url(settings.DATABASE_URL_EFFECTIVE)
-    return {
-        "driver": url.drivername,
-        "host": url.host,
-        "port": url.port,
-        "database": url.database,
-        "sslmode": "require" if "sslmode=require" in str(url) else "?"
-    }
 
-@app.get("/debug/db/tables")
-def debug_tables():
-    with Session(engine) as s:
-        rows = s.exec(text("""
-            SELECT table_name
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-            ORDER BY table_name
-        """)).all()
-    return {"tables": [r[0] for r in rows]}
-
-@app.get("/debug/db/ping")
-def debug_ping():
-    with Session(engine) as s:
-        now = s.exec(text("select now()")).one()
-    return {"ok": True, "now": str(now[0])}
 
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
 app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
