@@ -1,0 +1,20 @@
+name: 📢 PR Alert
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  pr-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comentar en el PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 ¡Hola! Gracias por tu contribución al Proyecto Naya.\n\n🤖 **Bot Status:**\n- Los tests se están ejecutando automáticamente.\n- Por favor, verifica que no haya conflictos con la rama main.\n\n¡Un revisor humano verá tu código pronto! 🚀'
+            })
