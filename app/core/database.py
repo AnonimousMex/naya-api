@@ -8,7 +8,7 @@ from sqlmodel import create_engine, Session
 from .settings import settings
 
 
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.DATABASE_URL_EFFECTIVE, pool_pre_ping=True)
 
 
 def get_db() -> Generator[Session, None, None]:

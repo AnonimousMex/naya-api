@@ -35,6 +35,8 @@ class AppointmentListResponse(BaseModel):
     patient_id: UUID
     date: date
     time: time
+    patient_name: str | None = None
+    patient_animal_id: str | None = None
 
 class AppointmentListRequest(BaseModel):
     token: str

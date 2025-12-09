@@ -13,7 +13,7 @@ from app.api.therapists.therapist_schema import (
 )
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
-from app.api.auth.auth_dependencies import get_current_therapist_id
+from app.auth.auth_dependencies import get_current_therapist_id
 from app.api.patients.patient_schema import ListPatientResponseSchema
 
 

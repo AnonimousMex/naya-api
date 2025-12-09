@@ -69,8 +69,13 @@ def get_user_token(
         "patient_id" if user_type == UserRoles.PATIENT.value else "therapist_id"
     )
     animal_id = None
+    code_connection = None
+    
     if user_type == UserRoles.PATIENT.value and hasattr(user, "patient") and user.patient:
         animal_id = str(user.patient.animal_id) if user.patient.animal_id else None
+    
+    if user_type == UserRoles.THERAPIST.value and hasattr(user, "therapist") and user.therapist:
+        code_connection = user.therapist.code_conection
 
     user_data = {
         "email": user.email,
@@ -81,6 +86,9 @@ def get_user_token(
     }
     if animal_id is not None:
         user_data["animal_id"] = animal_id
+    
+    if code_connection is not None:
+        user_data["code_connection"] = code_connection
 
     return create_access_token(
         user_data=user_data,

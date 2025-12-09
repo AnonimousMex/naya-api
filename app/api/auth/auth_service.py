@@ -262,6 +262,16 @@ class AuthService:
         return session.query(TherapistModel).filter_by(user_id=user_id).first()
 
     @staticmethod
+    async def get_user_id_by_patient_id(session: Session, patient_id: UUID) -> UUID:
+        query = (
+            select(UserModel.id)
+            .select_from(PatientModel)
+            .where(PatientModel.id == patient_id)
+            .join(UserModel, UserModel.id == PatientModel.user_id)
+        )
+        return session.exec(query).first()
+
+    @staticmethod
     def connection_exists(
         session: Session, *, therapist_id: UUID, patient_id: UUID
     ) -> bool:
