@@ -1,4 +1,4 @@
-name: 🧪 CI - Backend Tests
+name: CI - Backend Tests
 
 on:
   push:
