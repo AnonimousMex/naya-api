@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Union
 from uuid import UUID
+from app.core.logger import logger
 
 from sqlmodel import Session, select
 from fastapi import HTTPException, responses
@@ -268,6 +269,10 @@ class AuthController:
                 patient_or_therapist_id=patient_or_therapist_id,
             )
 
+            logger.info(
+                f"Inicio de sesión exitoso para el usuario: {user.email} (Rol: {user.user_kind.value})"
+            )
+            
             return responses.JSONResponse(
                 content={
                     "status": "Login success",
@@ -277,9 +282,11 @@ class AuthController:
                 }
             )
         except HTTPException as e:
+            logger.warning(f"Intento de login fallido: {str(e.detail)}")
             raise e
 
         except Exception as e:
+            logger.error(f"Error crítico en login: {str(e)}", exc_info=True)
             NayaHttpResponse.internal_error()
 
     async def connect_therapist(self, *, token: str, code: str):
