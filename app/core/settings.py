@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str
     SMTP_PASSWORD: str
 
+    # OAuth Google Configuration
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
+
+    # OAuth GitHub Configuration
+    GITHUB_CLIENT_ID: str
+    GITHUB_CLIENT_SECRET: str
+    GITHUB_REDIRECT_URI: str
+
     @property
     def DATABASE_URL(self):
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

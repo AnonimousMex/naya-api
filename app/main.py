@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from starlette.middleware.sessions import SessionMiddleware
+
 from app.api.games.detectiveEmociones.detective_router import detective_router
 from app.api.games.memociones.memociones_router import memociones_router
 from app.api.energies.energy_router import energy_router
@@ -12,7 +14,9 @@ from app.api.animals.animal_router import animals_router
 from app.api.games.game_router import game_router
 from app.api.games.y_ese_ruido.y_ese_ruido_router import y_ese_ruido_router
 from app.api.specialties.specialty_router import specialty_router
-from app.api.professional_experience.professional_experience_router import professional_experience_router
+from app.api.professional_experience.professional_experience_router import (
+    professional_experience_router,
+)
 from app.api.parents.parent_router import parent_router
 
 from .core.settings import settings
@@ -26,6 +30,9 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1}/openapi.json",
 )
 
+app.add_middleware(SessionMiddleware, secret_key=settings.JWT_SECRET_KEY)
+
+# 2. Middleware de CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,6 +47,8 @@ async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
 
+# --- ROUTERS ---
+
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
 app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
 app.include_router(animals_router, prefix=settings.API_V1, tags=["Animals"])
@@ -51,7 +60,11 @@ app.include_router(detective_router, prefix=settings.API_V1, tags=["Detective"])
 app.include_router(y_ese_ruido_router, prefix=settings.API_V1, tags=["YEseRuido"])
 app.include_router(badge_router, prefix=settings.API_V1, tags=["Badges"])
 app.include_router(specialty_router, prefix=settings.API_V1, tags=["Specialties"])
-app.include_router(professional_experience_router, prefix=settings.API_V1, tags=["Professional Experience"])
+app.include_router(
+    professional_experience_router,
+    prefix=settings.API_V1,
+    tags=["Professional Experience"],
+)
 app.include_router(parent_router, prefix=settings.API_V1, tags=["Parents"])
 
 app.include_router(auth_router, prefix=settings.API_V1, tags=["Auth"])
