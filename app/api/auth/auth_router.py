@@ -19,11 +19,12 @@ from app.core.auth import LoginFormDataDep, oauth
 from app.core.database import SessionDep
 from app.core.settings import settings
 from app.core.http_response import NayaHttpResponse
+from app.utils.rate_limiter import rate_limiter
 
 auth_router = APIRouter(prefix="/auth")
 
 
-@auth_router.get("/google/login")
+@auth_router.get("/google/login", dependencies=[Depends(rate_limiter)])
 async def google_login(request: Request):
     try:
         return await oauth.google.authorize_redirect(
@@ -46,7 +47,7 @@ async def google_callback(request: Request, session: SessionDep):
         NayaHttpResponse.internal_error()
 
 
-@auth_router.get("/github/login")
+@auth_router.get("/github/login", dependencies=[Depends(rate_limiter)])
 async def github_login(request: Request):
     try:
         return await oauth.github.authorize_redirect(
@@ -69,7 +70,7 @@ async def github_callback(request: Request, session: SessionDep):
         NayaHttpResponse.internal_error()
 
 
-@auth_router.post("/login")
+@auth_router.post("/login", dependencies=[Depends(rate_limiter)])
 async def login(session: SessionDep, form_data: LoginFormDataDep):
     try:
         email = form_data.username
@@ -85,7 +86,7 @@ async def login(session: SessionDep, form_data: LoginFormDataDep):
         NayaHttpResponse.internal_error()
 
 
-@auth_router.post("/verification-code")
+@auth_router.post("/verification-code", dependencies=[Depends(rate_limiter)])
 async def verify_user_verification_code(
     request: VerificationRequest, session: SessionDep
 ):
@@ -104,7 +105,7 @@ async def verify_user_verification_code(
         NayaHttpResponse.internal_error()
 
 
-@auth_router.post("/password-change-request")
+@auth_router.post("/password-change-request", dependencies=[Depends(rate_limiter)])
 async def request_password_reset_verification_code(
     request: RequestPasswordChange, session: SessionDep
 ):
@@ -178,7 +179,7 @@ async def select_profile_picture(request: SelectProfileRequest, session: Session
         NayaHttpResponse.internal_error()
 
 
-@auth_router.put("/resend-verification-code")
+@auth_router.put("/resend-verification-code", dependencies=[Depends(rate_limiter)])
 async def resend_verification_code(request: ResendCode, session: SessionDep):
     try:
         auth_controller = AuthController(session=session)

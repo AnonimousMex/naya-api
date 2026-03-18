@@ -30,6 +30,7 @@ class HttpStatus:
     FORBIDDEN = 403
     INTERNAL_SERVER_ERROR = 500
     BAD_REQUEST = 400
+    TOO_MANY_REQUESTS = 429
 
 
 class PaginationType(BaseModel):
@@ -151,6 +152,20 @@ class NayaHttpResponse(Generic[T]):
                 "statusMessage": HttpResponseMessages.BAD_REQUEST,
                 "error": {
                     "code": error_id or HttpStatus.BAD_REQUEST,
+                    "data": data,
+                },
+            },
+        )
+
+    @staticmethod
+    def too_many_requests(data: T, error_id: Optional[str] = None) -> HTTPException:
+        raise HTTPException(
+            status_code=HttpStatus.TOO_MANY_REQUESTS,
+            detail={
+                "status": HttpStatus.TOO_MANY_REQUESTS,
+                "statusMessage": "Too Many Requests",
+                "error": {
+                    "code": error_id or HttpStatus.TOO_MANY_REQUESTS,
                     "data": data,
                 },
             },

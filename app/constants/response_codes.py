@@ -29,13 +29,26 @@ class NayaResponseCodes:
     CONNECTION_EXISTS = create_response_code(
         "E013", "Connection with this therapist already exists"
     )
-    APPOINTMENT_EXISTS = create_response_code("E018", "You already have an appointment scheduled for this date")
-    NO_APPOINTMENTS = create_response_code("E017", "No appointments were found for this therapist")
+    APPOINTMENT_EXISTS = create_response_code(
+        "E018", "You already have an appointment scheduled for this date"
+    )
+    NO_APPOINTMENTS = create_response_code(
+        "E017", "No appointments were found for this therapist"
+    )
     UNEXISTING_CONNECTION = create_response_code("E014", "Connection does not exist")
-    NO_VERIFIED_THERAPISTS = create_response_code( "E016", "No verified therapists found" )
-    NO_CONNECTED_PATIENTS = create_response_code("E015", "No patients are connected to this therapist")
+    NO_VERIFIED_THERAPISTS = create_response_code(
+        "E016", "No verified therapists found"
+    )
+    NO_CONNECTED_PATIENTS = create_response_code(
+        "E015", "No patients are connected to this therapist"
+    )
     NO_MORE_LIVES = create_response_code("E019", "User has no more lives")
-    DUPLICATE_RELATIONSHIP = create_response_code("E0030", "This response has already been recorded")
+    DUPLICATE_RELATIONSHIP = create_response_code(
+        "E0030", "This response has already been recorded"
+    )
     TEST_COMPLETE = create_response_code("E0031", "Test has been complete")
     BADGE_ALREADY_UNLOCKED = create_response_code("E032", "Badge already unlocked")
     UNEXISTING_TEST = create_response_code("E033", "Test does not exist ")
+    TOO_MANY_REQUESTS = create_response_code(
+        "E034", "Demasiadas peticiones. Intenta de nuevo en un minuto."
+    )
