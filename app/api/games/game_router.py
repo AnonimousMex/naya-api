@@ -9,10 +9,9 @@ from app.core.http_response import NayaHttpResponse, NayaResponseModel
 
 game_router = APIRouter()
 
-@game_router.get(
-    "/games",
-    response_model=NayaResponseModel[list[GameListResponse]]
-)
+
+# We integrate de api for games, we will have the endpoints for the games here, we will use the game controller to handle the logic of the games, and we will use the game schema to define the response model for the games.
+@game_router.get("/games", response_model=NayaResponseModel[list[GameListResponse]])
 async def list_games(
     session: SessionDep,
 ):

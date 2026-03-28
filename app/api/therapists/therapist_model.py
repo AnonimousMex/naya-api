@@ -7,7 +7,9 @@ from typing import Optional
 
 if TYPE_CHECKING:
     from app.api.specialties.specialty_model import SpecialtyModel
-    from app.api.professional_experience.professional_experience_model import ProfessionalExperienceModel
+    from app.api.professional_experience.professional_experience_model import (
+        ProfessionalExperienceModel,
+    )
 
 
 class TherapistModel(BaseNayaModel, table=True):
@@ -24,10 +26,11 @@ class TherapistModel(BaseNayaModel, table=True):
 
     user: "UserModel" = Relationship(back_populates="therapist")  # type: ignore
     connections: List["ConnectionModel"] = Relationship(back_populates="therapist")  # type: ignore
-    
+
     # Relaciones agregadas después de crear las migraciones
     # specialties: List["SpecialtyModel"] = Relationship(back_populates="therapists")
     # professional_experiences: List["ProfessionalExperienceModel"] = Relationship(back_populates="therapist")
+
 
 class AppointmentModel(BaseNayaModel, table=True):
     __tablename__ = "appointments"
@@ -38,5 +41,3 @@ class AppointmentModel(BaseNayaModel, table=True):
     time: time
     status: bool = Field(default=True)
     deleted_at: Optional[datetime] = Field(default=None)
-
-
