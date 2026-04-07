@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-
 from starlette.middleware.sessions import SessionMiddleware
+
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.games.detectiveEmociones.detective_router import detective_router
 from app.api.games.memociones.memociones_router import memociones_router
@@ -30,9 +31,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1}/openapi.json",
 )
 
+Instrumentator().instrument(app).expose(app)
+
 app.add_middleware(SessionMiddleware, secret_key=settings.JWT_SECRET_KEY)
 
-# 2. Middleware de CORS
+# Middleware de CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,7 +51,6 @@ async def http_exception_handler(_, exc: HTTPException):
 
 
 # --- ROUTERS ---
-
 app.include_router(patients_router, prefix=settings.API_V1, tags=["Patients"])
 app.include_router(therapist_router, prefix=settings.API_V1, tags=["Therapist"])
 app.include_router(animals_router, prefix=settings.API_V1, tags=["Animals"])
