@@ -52,6 +52,18 @@ jobs:
         run: |
           pytest tests/ --cov=app --cov-report=xml:coverage.xml || true
 
+      - name: Verify coverage.xml was generated
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "::error::coverage.xml was NOT generated. pytest probably failed during import. Removing '|| true' would surface the real error."
+            echo "Files in workspace root:"
+            ls -la
+            exit 1
+          fi
+          echo "coverage.xml exists ($(wc -l < coverage.xml) lines)"
+          echo "First 5 source paths Sonar will look for:"
+          grep -oE 'filename="[^"]+"' coverage.xml | head -5
+
       - name: Verify SONAR_TOKEN is reaching the runner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
