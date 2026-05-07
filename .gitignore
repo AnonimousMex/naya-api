@@ -166,3 +166,18 @@ cython_debug/
 vscode/
 # credenciales locales (seed)
 CREDENTIALS.md
+
+# CI / observability artifacts (no deben terminar en el repo)
+.ruff_cache/
+bandit-report.json
+sbom.spdx.json
+trivy-results.sarif
+junit.xml
+naya_app.log
+naya_app.log.*
+
+# Editores
+.idea/
+*.iml
+.DS_Store
+.vscode/settings.json
