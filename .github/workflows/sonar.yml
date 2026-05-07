@@ -50,7 +50,10 @@ jobs:
           SENTRY_DSN: ""
           SENTRY_ENVIRONMENT: ci
         run: |
-          pytest tests/ --cov=app --cov-report=xml:coverage.xml || true
+          # `--cov=.` (no `--cov=app`) para que coverage.xml emita paths
+          # con prefijo "app/", que es lo que Sonar busca. Filtros y omit
+          # viven en .coveragerc en la raíz del repo.
+          pytest tests/ --cov=. --cov-report=xml:coverage.xml || true
 
       - name: Verify coverage.xml was generated
         run: |
