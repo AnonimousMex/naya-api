@@ -1,0 +1,22 @@
+[run]
+# Sonar espera paths con prefijo "app/". Si usamos `source = app`,
+# coverage trata "app/" como root y emite "utils/email.py" sin
+# prefijo, rompiendo el mapeo con el repo. Por eso medimos sobre
+# "." y filtramos con `include`.
+relative_files = True
+source = .
+include =
+    app/*
+branch = True
+omit =
+    app/scripts/*
+    */__pycache__/*
+    */migrations/*
+    */alembic/*
+    tests/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
