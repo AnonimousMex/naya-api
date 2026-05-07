@@ -2,38 +2,83 @@ name: 🧪 CI - Backend Tests
 
 on:
   push:
-    # En main/master/develop corre directo. En feature branches también
-    # corre para feedback temprano. PRs cruzados también disparan.
     branches: ["main", "master", "develop", "feat/**", "fix/**", "chore/**"]
   pull_request:
     branches: ["main", "master", "develop"]
   workflow_dispatch:
 
+# 4 jobs corren en paralelo + un job final que agrega los resultados.
+# Estructura DAG visible en la UI de Actions.
 jobs:
-  test:
-    name: pytest
+
+  # ---------------------------------------------------------------------
+  # 1. Lint — estilo y errores estáticos
+  # ---------------------------------------------------------------------
+  lint:
+    name: 🎨 Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+    timeout-minutes: 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
+      - name: Install ruff
+        run: pip install ruff==0.6.9
+      - name: Run ruff check
+        # Output formato GitHub para ver issues anotados en el PR
+        run: ruff check app/ tests/ --output-format=github --exit-zero
+      - name: Run ruff format check
+        run: ruff format --check app/ tests/ || true
 
+  # ---------------------------------------------------------------------
+  # 2. Security — escaneo de código en busca de vulnerabilidades
+  # ---------------------------------------------------------------------
+  security:
+    name: 🔒 Security scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install bandit & pip-audit
+        run: pip install bandit==1.7.10 pip-audit==2.7.3
+      - name: Run bandit (SAST sobre código)
+        run: |
+          bandit -r app/ -ll --skip B101 -f txt || true
+          bandit -r app/ -ll --skip B101 -f json -o bandit-report.json || true
+      - name: Audit dependencies
+        run: pip-audit -r requirements.txt --strict || true
+      - name: Upload bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # 3. Tests — pytest con cobertura
+  # ---------------------------------------------------------------------
+  test:
+    name: 🧪 Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Run unit tests
-        # Variables mínimas para que pydantic-settings cargue Settings.
-        # NO son secretos reales — solo dummies para que `from app.core.settings`
-        # no falle al importarse durante la suite.
+          pip install pytest-cov==5.0.0
+      - name: Run pytest with coverage
         env:
           PROJECT_NAME: naya-api
           API_V1: /api/v1
@@ -50,15 +95,72 @@ jobs:
           SMTP_PORT: 587
           SMTP_USERNAME: ci@example.com
           SMTP_PASSWORD: ci-pass
-          # Sentry desactivado en CI (DSN vacío = no-op)
           SENTRY_DSN: ""
           SENTRY_ENVIRONMENT: ci
-        run: pytest tests/ -v --tb=short
-
-      - name: Test summary
-        if: always()
         run: |
-          echo "### Resultado de tests" >> $GITHUB_STEP_SUMMARY
-          echo "- Suite: tests/" >> $GITHUB_STEP_SUMMARY
-          echo "- Python: 3.11" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          pytest tests/ -v --tb=short \
+            --cov=app \
+            --cov-report=term \
+            --cov-report=xml \
+            --cov-report=html \
+            --junitxml=junit.xml
+      - name: Upload coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 14
+      - name: Upload junit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results
+          path: junit.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------
+  # 4. Build check — verifica que la imagen Docker compila
+  # ---------------------------------------------------------------------
+  build-check:
+    name: 🐳 Docker build verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: naya-api:ci-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------
+  # 5. Summary — agrega resultados de los 4 jobs anteriores
+  # ---------------------------------------------------------------------
+  ci-summary:
+    name: 📊 CI Summary
+    needs: [lint, security, test, build-check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🧪 Naya API — CI Pipeline" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Fase | Resultado |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎨 Lint           | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security       | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Tests          | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 Build verify   | ${{ needs.build-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pipeline overall**: ${{ contains(needs.*.result, 'failure') && '❌ FAIL' || '✅ PASS' }}" >> $GITHUB_STEP_SUMMARY
+      - name: Fail if any required job failed
+        if: needs.test.result == 'failure' || needs.build-check.result == 'failure'
+        run: |
+          echo "Tests o build fallaron — bloqueando merge."
+          exit 1
