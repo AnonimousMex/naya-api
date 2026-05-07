@@ -1,7 +1,9 @@
 from fastapi import HTTPException
 from sqlmodel import Session
 
+from app.core import metrics
 from app.core.http_response import NayaHttpResponse
+from app.core.logger import logger
 from app.api.badges.badge_schema import BadgeResponseModel
 from app.constants.response_codes import NayaResponseCodes
 from app.api.badges.badge_service import BadgeService
@@ -21,6 +23,14 @@ class BadgeController:
             if await BadgeService.badge_exists(
             self.session, user_id=user_id, badge_title=badge_title
             ):
+                logger.info(
+                    "badge.already_unlocked",
+                    extra={
+                        "event": "badge.already_unlocked",
+                        "user_id": str(user_id),
+                        "badge_title": badge_title,
+                    },
+                )
                 NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.BADGE_ALREADY_UNLOCKED.detail,
@@ -34,17 +44,34 @@ class BadgeController:
             badge = await BadgeService.unlock_badge(
                 self.session, user_id=user_id , badge_title=badge_title
             )
-            
-            badge_data = jsonable_encoder(badge)
 
+            badge_data = jsonable_encoder(badge)
+            logger.info(
+                "badge.unlocked",
+                extra={
+                    "event": "badge.unlocked",
+                    "user_id": str(user_id),
+                    "badge_title": badge_title,
+                },
+            )
             return BadgeResponseModel(**badge_data)
 
         except HTTPException as e:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="badges").inc()
+            logger.exception(
+                "badge.unlock_failed",
+                extra={
+                    "event": "badge.unlock_failed",
+                    "badge_title": badge_title,
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             raise NayaHttpResponse.internal_error()
-        
+
 
     def get_badges(self, token: str) -> list[BadgeResponseModel]:
         try:
@@ -54,4 +81,13 @@ class BadgeController:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="badges").inc()
+            logger.exception(
+                "badge.list_failed",
+                extra={
+                    "event": "badge.list_failed",
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             raise NayaHttpResponse.internal_error()

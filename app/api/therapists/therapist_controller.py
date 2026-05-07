@@ -9,6 +9,7 @@ from app.api.auth.auth_service import AuthService
 from app.api.therapists.therapist_services import TherapistService
 from app.constants.response_codes import NayaResponseCodes
 from app.core import metrics
+from app.core import sentry_events as sentry
 from app.core.http_response import NayaHttpResponse
 from app.core.logger import logger
 
@@ -23,6 +24,9 @@ from fastapi.encoders import jsonable_encoder
 
 
 from .therapist_schema import TherapistResponseSchema, TherapistCreateSchema, AppointmentRequest, AppointmentResponse
+
+
+_EVT_APPOINTMENT_CONFLICT = "appointment.conflict"
 
 
 class TherapistController:
@@ -90,6 +94,19 @@ class TherapistController:
                 },
             )
 
+            # Business event: new therapist registered.
+            sentry.track(
+                "user.registered",
+                level="info",
+                category="onboarding",
+                tags={"role": UserRoles.THERAPIST.value},
+                extras={
+                    "user_id": str(user.id),
+                    "therapist_id": str(therapist.id),
+                    "code_connection": conection_code.code_conection,
+                },
+            )
+
             user_dump = UserResponseSchema.model_validate(user).model_dump()
 
             response = TherapistResponseSchema(**user_dump, therapist_id=therapist.id)
@@ -115,6 +132,13 @@ class TherapistController:
             )
 
             if therapist is None:
+                logger.warning(
+                    "therapist.not_found",
+                    extra={
+                        "event": "therapist.not_found",
+                        "therapist_id": str(therapist_id),
+                    },
+                )
                 NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.UNEXISTING_THERAPIST.detail,
@@ -132,7 +156,17 @@ class TherapistController:
         except HTTPException as e:
             raise e
 
-        except Exception:
+        except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "therapist.lookup_failed",
+                extra={
+                    "event": "therapist.lookup_failed",
+                    "therapist_id": str(therapist_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     async def create_appointment(
@@ -145,6 +179,18 @@ class TherapistController:
             if TherapistService.appointment_exists(
             self.session, therapist_id=therapist.id, date= date, time=time
             ):
+                metrics.APPOINTMENT_CONFLICTS.labels(operation="create").inc()
+                logger.warning(
+                    _EVT_APPOINTMENT_CONFLICT,
+                    extra={
+                        "event": _EVT_APPOINTMENT_CONFLICT,
+                        "therapist_id": str(therapist.id),
+                        "patient_id": str(patient_id),
+                        "date": str(date),
+                        "time": str(time),
+                        "operation": "create",
+                    },
+                )
                 NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.APPOINTMENT_EXISTS.detail,
@@ -160,26 +206,68 @@ class TherapistController:
             appointment = await TherapistService.schedule_appointment(
                 self.session, therapist_id=therapist.id , patient_id=patient_id, date=date, time=time
             )
-            
+
             appointment_data = jsonable_encoder(appointment)
 
+            metrics.APPOINTMENTS_CREATED.inc()
+            logger.info(
+                "appointment.created",
+                extra={
+                    "event": "appointment.created",
+                    "therapist_id": str(therapist.id),
+                    "patient_id": str(patient_id),
+                    "appointment_id": str(appointment.id) if hasattr(appointment, "id") else None,
+                    "date": str(date),
+                    "time": str(time),
+                },
+            )
             return AppointmentResponse(**appointment_data)
 
         except HTTPException as e:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "appointment.create_failed",
+                extra={
+                    "event": "appointment.create_failed",
+                    "patient_id": str(patient_id),
+                    "date": str(date),
+                    "time": str(time),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             raise NayaHttpResponse.internal_error()
-    
-    
+
+
     async def cancel_appointment(self, appointment_id: UUID,) -> AppointmentResponse:
         try:
             appointment =  TherapistService.cancel_appointment(
                 self.session, appointment_id = appointment_id
             )
+            metrics.APPOINTMENTS_CANCELLED.inc()
+            logger.info(
+                "appointment.cancelled",
+                extra={
+                    "event": "appointment.cancelled",
+                    "appointment_id": str(appointment_id),
+                },
+            )
             return NayaHttpResponse.no_content()
         except Exception as e:
-            raise NayaHttpResponse.internal_error() 
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "appointment.cancel_failed",
+                extra={
+                    "event": "appointment.cancel_failed",
+                    "appointment_id": str(appointment_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
+            raise NayaHttpResponse.internal_error()
 
     async def list_appointments(self, token: str, patient_id: UUID | None = None) -> AppointmentResponse:
         try:
@@ -187,8 +275,16 @@ class TherapistController:
             therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
 
             appointments = await TherapistService.list_appointments( self.session, therapist_id=therapist.id, patient_id=patient_id)
-            
+
             if not appointments:
+                logger.info(
+                    "appointment.list_empty",
+                    extra={
+                        "event": "appointment.list_empty",
+                        "therapist_id": str(therapist.id),
+                        "patient_id": str(patient_id) if patient_id else None,
+                    },
+                )
                 return NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.NO_APPOINTMENTS.detail,
@@ -197,10 +293,22 @@ class TherapistController:
                     error_id=NayaResponseCodes.NO_APPOINTMENTS.code,
                 )
             return appointments
-            
+
+        except HTTPException:
+            raise
         except Exception as e:
-            raise e
-          
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "appointment.list_failed",
+                extra={
+                    "event": "appointment.list_failed",
+                    "patient_id": str(patient_id) if patient_id else None,
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
+            raise
+
     async def reschedule_appointment(self, token: str, appointment_id: UUID, date: date, time: time) -> AppointmentResponse:
         try:
             user_id = get_user_id_from_token(token)
@@ -209,6 +317,18 @@ class TherapistController:
             if TherapistService.appointment_exists(
             self.session, therapist_id=therapist.id, date= date, time=time
             ):
+                metrics.APPOINTMENT_CONFLICTS.labels(operation="reschedule").inc()
+                logger.warning(
+                    _EVT_APPOINTMENT_CONFLICT,
+                    extra={
+                        "event": _EVT_APPOINTMENT_CONFLICT,
+                        "therapist_id": str(therapist.id),
+                        "appointment_id": str(appointment_id),
+                        "date": str(date),
+                        "time": str(time),
+                        "operation": "reschedule",
+                    },
+                )
                 NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.APPOINTMENT_EXISTS.detail,
@@ -223,18 +343,59 @@ class TherapistController:
             appointment =  TherapistService.reschedule_appointment(
                 self.session, appointment_id = appointment_id, date=date, time=time
             )
+            metrics.APPOINTMENTS_RESCHEDULED.inc()
+            logger.info(
+                "appointment.rescheduled",
+                extra={
+                    "event": "appointment.rescheduled",
+                    "appointment_id": str(appointment_id),
+                    "therapist_id": str(therapist.id),
+                    "date": str(date),
+                    "time": str(time),
+                },
+            )
             return NayaHttpResponse.no_content()
+        except HTTPException:
+            raise
         except Exception as e:
-            raise e
-        
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "appointment.reschedule_failed",
+                extra={
+                    "event": "appointment.reschedule_failed",
+                    "appointment_id": str(appointment_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
+            raise
+
     async def complete_appointment(self, appointment_id: UUID,) -> AppointmentResponse:
         try:
             appointment =  TherapistService.complete_appointment(
                 self.session, appointment_id = appointment_id
             )
+            metrics.APPOINTMENTS_COMPLETED.inc()
+            logger.info(
+                "appointment.completed",
+                extra={
+                    "event": "appointment.completed",
+                    "appointment_id": str(appointment_id),
+                },
+            )
             return NayaHttpResponse.no_content()
         except Exception as e:
-            raise NayaHttpResponse.internal_error() 
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "appointment.complete_failed",
+                extra={
+                    "event": "appointment.complete_failed",
+                    "appointment_id": str(appointment_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
+            raise NayaHttpResponse.internal_error()
 
     async def disconnect_patient(self, therapist_id: UUID, patient_id: UUID):
         try:
@@ -242,6 +403,13 @@ class TherapistController:
                 therapist_id=therapist_id, session=self.session
             )
             if therapist is None:
+                logger.warning(
+                    "disconnect.therapist_not_found",
+                    extra={
+                        "event": "disconnect.therapist_not_found",
+                        "therapist_id": str(therapist_id),
+                    },
+                )
                 NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.UNEXISTING_THERAPIST.detail,
@@ -252,6 +420,14 @@ class TherapistController:
 
             patient = AuthService.get_patient(self.session, patient_id=patient_id)
             if patient is None:
+                logger.warning(
+                    "disconnect.patient_not_found",
+                    extra={
+                        "event": "disconnect.patient_not_found",
+                        "therapist_id": str(therapist_id),
+                        "patient_id": str(patient_id),
+                    },
+                )
                 NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.UNEXISTING_PATIENT.detail,
@@ -264,6 +440,14 @@ class TherapistController:
                 therapist_id=therapist.id,
                 patient_id=patient.id,
             ):
+                logger.warning(
+                    "disconnect.connection_missing",
+                    extra={
+                        "event": "disconnect.connection_missing",
+                        "therapist_id": str(therapist.id),
+                        "patient_id": str(patient.id),
+                    },
+                )
                 NayaHttpResponse.bad_request(
                     data={
                         "message": NayaResponseCodes.UNEXISTING_CONNECTION.detail,
@@ -283,17 +467,43 @@ class TherapistController:
             self.session.add(patient)
             self.session.commit()
 
+            logger.info(
+                "disconnect.success",
+                extra={
+                    "event": "disconnect.success",
+                    "therapist_id": str(therapist.id),
+                    "patient_id": str(patient.id),
+                },
+            )
             return NayaHttpResponse.no_content()
 
         except HTTPException as e:
             raise e
-        except Exception:
+        except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "disconnect.failed",
+                extra={
+                    "event": "disconnect.failed",
+                    "therapist_id": str(therapist_id),
+                    "patient_id": str(patient_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     async def list_patients(self, therapist_id: UUID):
         try:
             patients = await TherapistService.list_patients_by_therapist(therapist_id, self.session)
             if not patients:
+                logger.info(
+                    "therapist.no_connected_patients",
+                    extra={
+                        "event": "therapist.no_connected_patients",
+                        "therapist_id": str(therapist_id),
+                    },
+                )
                 return NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.NO_CONNECTED_PATIENTS.detail,
@@ -304,5 +514,15 @@ class TherapistController:
             return patients
         except HTTPException as e:
             raise e
-        except Exception:
+        except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.exception(
+                "therapist.list_patients_failed",
+                extra={
+                    "event": "therapist.list_patients_failed",
+                    "therapist_id": str(therapist_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()

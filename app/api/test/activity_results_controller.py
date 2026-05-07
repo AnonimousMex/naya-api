@@ -29,8 +29,12 @@ from app.api.test.test_model import TestModel
 from app.api.patients.patient_model import PatientModel
 from app.constants.user_constants import CopingCategories
 from app.core import metrics
+from app.core import sentry_events as sentry
 from app.core.http_response import NayaHttpResponse
 from app.core.logger import logger
+
+
+_EVT_ACTIVITY_RESULT_CREATED = "activity_result.created"
 
 
 class ActivityResultsController:
@@ -77,9 +81,9 @@ class ActivityResultsController:
         if payload.duration_seconds is not None:
             metrics.ACTIVITY_DURATION.observe(payload.duration_seconds)
         logger.info(
-            "activity_result.created",
+            _EVT_ACTIVITY_RESULT_CREATED,
             extra={
-                "event": "activity_result.created",
+                "event": _EVT_ACTIVITY_RESULT_CREATED,
                 "test_id": str(test.id),
                 "child_id": str(payload.child_id),
                 "answers_recorded": recorded,
@@ -88,6 +92,36 @@ class ActivityResultsController:
                 "is_complete": completed_at is not None,
             },
         )
+
+        # Breadcrumb (context that only surfaces if a Sentry event fires
+        # later in the same request — useful for debugging without spending
+        # Sentry quota).
+        sentry.breadcrumb(
+            category="activity",
+            message=_EVT_ACTIVITY_RESULT_CREATED,
+            data={
+                "test_id": str(test.id),
+                "child_id": str(payload.child_id),
+                "answers_recorded": recorded,
+                "score": payload.score,
+            },
+        )
+
+        # A low score is a warning signal (UX issue or a child struggling)
+        # → captured as a warning in Sentry for later analysis.
+        if payload.score is not None and payload.score < 30:
+            sentry.track(
+                "activity.low_score",
+                level="warning",
+                category="business",
+                tags={"event_type": "low_score"},
+                extras={
+                    "test_id": str(test.id),
+                    "child_id": str(payload.child_id),
+                    "score": payload.score,
+                    "duration_seconds": payload.duration_seconds,
+                },
+            )
 
         return ActivityResultCreated(
             test_id=test.id, child_id=payload.child_id, answers_recorded=recorded

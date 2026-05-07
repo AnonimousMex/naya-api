@@ -1,17 +1,17 @@
 """
-Inicialización de Sentry para Naya API.
+Sentry initialization for the Naya API.
 
-Diseño:
-- Si `SENTRY_DSN` está vacío, init es no-op silencioso (no rompe nada en local
-  sin Sentry configurado).
-- Hooks `before_send` / `before_send_transaction` para:
-  - Eliminar campos sensibles (password, token, authorization, jwt) del payload.
-  - Truncar tokens Bearer dentro de strings.
-  - Ignorar transacciones de `/metrics`, `/openapi.json`, `/docs`, `/redoc`.
-- Adjunta `request_id` (de nuestro contextvar) como tag en cada evento, para
-  poder pivotar de Sentry → logs estructurados.
-- Integración con logging: `logger.error(..., exc_info=True)` se reporta a
-  Sentry como evento. `logger.info` queda como breadcrumb.
+Design:
+- If `SENTRY_DSN` is empty, init is a silent no-op (does not break local
+  development without Sentry configured).
+- `before_send` / `before_send_transaction` hooks to:
+  - Strip sensitive fields (password, token, authorization, jwt) from the payload.
+  - Truncate Bearer tokens embedded inside strings.
+  - Drop transactions for `/metrics`, `/openapi.json`, `/docs`, `/redoc`.
+- Attaches `request_id` (from our contextvar) as a tag on every event so we
+  can pivot from a Sentry issue to the structured logs.
+- Logging integration: `logger.error(..., exc_info=True)` is reported to
+  Sentry as an event; `logger.info` is kept as a breadcrumb only.
 """
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ def _truncate_token(value: str) -> str:
 
 
 def _scrub(obj: Any) -> Any:
-    """Scrub recursivo de claves sensibles y truncado de Bearer tokens."""
+    """Recursively scrub sensitive keys and truncate Bearer tokens."""
     if isinstance(obj, dict):
         return {
             k: ("***REDACTED***" if k.lower() in _SENSITIVE_KEYS else _scrub(v))
@@ -82,7 +82,7 @@ def _attach_request_id(event: Dict[str, Any]) -> None:
 
 
 def _before_send(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Se llama por cada evento de error antes de enviarse a Sentry."""
+    """Called for every error event before it is sent to Sentry."""
     _attach_request_id(event)
     # Scrub: request data, extras, contexts
     if "request" in event:
@@ -101,7 +101,7 @@ def _before_send(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[s
 def _before_send_transaction(
     event: Dict[str, Any], hint: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
-    """Filtra transacciones ruidosas (Prometheus scrape, docs, etc)."""
+    """Drop noisy transactions (Prometheus scrape, docs, etc)."""
     transaction = event.get("transaction") or ""
     if any(transaction.endswith(p) or transaction == p for p in _IGNORED_TRANSACTIONS):
         return None  # drop
@@ -111,27 +111,30 @@ def _before_send_transaction(
 
 def init_sentry() -> bool:
     """
-    Inicializa Sentry si hay DSN. Devuelve True si quedó activo.
-    Idempotente: llamadas repetidas son seguras.
+    Initialize Sentry if a DSN is configured. Returns True when active.
+    Idempotent: repeated calls are safe.
     """
     dsn = (settings.SENTRY_DSN or "").strip()
     if not dsn:
-        # Modo dev sin Sentry: no-op silencioso
+        # Dev mode without Sentry: silent no-op
         return False
 
-    # `LoggingIntegration` por defecto:
-    # - level=INFO captura logs de info como breadcrumbs.
-    # - event_level=ERROR sube logs de error como eventos.
+    # LoggingIntegration:
+    # - level=INFO         → INFO logs are recorded as breadcrumbs (context).
+    # - event_level=WARNING → WARNING+ is escalated to a Sentry event.
+    # This makes signals like auth_failure, appointment_conflict,
+    # therapist_not_found, energy_depleted, etc. visible in Sentry
+    # as Issues (not just 5xx errors).
     logging_integration = LoggingIntegration(
         level=logging.INFO,
-        event_level=logging.ERROR,
+        event_level=logging.WARNING,
     )
 
     sentry_sdk.init(
         dsn=dsn,
         environment=settings.SENTRY_ENVIRONMENT,
         release=settings.SENTRY_RELEASE,
-        send_default_pii=False,  # NO mandar IPs/headers sensibles automáticamente
+        send_default_pii=False,  # do NOT auto-attach IPs/sensitive headers
         traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
         profiles_sample_rate=settings.SENTRY_PROFILES_SAMPLE_RATE,
         attach_stacktrace=True,
@@ -142,8 +145,8 @@ def init_sentry() -> bool:
             logging_integration,
             SqlalchemyIntegration(),
         ],
-        # Tags globales: cualquier evento llevará estos
-        # (project_name viene de settings, útil al tener varios servicios)
+        # Global tags: every event will carry these
+        # (project name comes from settings; useful when running multiple services)
     )
     sentry_sdk.set_tag("project", settings.PROJECT_NAME)
     return True

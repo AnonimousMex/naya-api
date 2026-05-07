@@ -2,11 +2,21 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from app.core.logger import logger
 from app.core.settings import settings
 
 from app.core.http_response import NayaHttpResponse
 
 from app.constants.email_template import new_user_verification_code_email_tempalte
+
+
+_EVT_EMAIL_SENT = "email.sent"
+_EVT_EMAIL_SMTP_FAILED = "email.smtp_failed"
+_EVT_EMAIL_SEND_FAILED = "email.send_failed"
+
+
+def _email_domain(email: str) -> str:
+    return email.split("@", 1)[1] if "@" in email else "<no-domain>"
 
 
 class EmailService:
@@ -31,6 +41,7 @@ class EmailService:
             user_name=to_name, code=verification_code
         )
 
+        mail = None
         try:
             first_part = MIMEText(text, "plain")
             second_part = MIMEText(html, "html")
@@ -46,15 +57,50 @@ class EmailService:
 
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
+            logger.info(
+                _EVT_EMAIL_SENT,
+                extra={
+                    "event": _EVT_EMAIL_SENT,
+                    "kind": "verification",
+                    "to_domain": _email_domain(to_email),
+                    "smtp_server": smtp_server,
+                },
+            )
 
-        except smtplib.SMTPException:
+        except smtplib.SMTPException as e:
+            logger.error(
+                _EVT_EMAIL_SMTP_FAILED,
+                extra={
+                    "event": _EVT_EMAIL_SMTP_FAILED,
+                    "kind": "verification",
+                    "to_domain": _email_domain(to_email),
+                    "smtp_server": smtp_server,
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
             NayaHttpResponse.internal_error()
 
-        except Exception:
+        except Exception as e:
+            logger.exception(
+                _EVT_EMAIL_SEND_FAILED,
+                extra={
+                    "event": _EVT_EMAIL_SEND_FAILED,
+                    "kind": "verification",
+                    "to_domain": _email_domain(to_email),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
         finally:
-            mail.quit()
+            if mail is not None:
+                try:
+                    mail.quit()
+                except Exception:  # noqa: BLE001 - best-effort cleanup
+                    pass
 
     @staticmethod
     async def send_conection_code_email(
@@ -77,6 +123,7 @@ class EmailService:
             user_name=to_name, code=verification_code
         )
 
+        mail = None
         try:
             first_part = MIMEText(text, "plain")
             second_part = MIMEText(html, "html")
@@ -92,12 +139,47 @@ class EmailService:
 
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
+            logger.info(
+                _EVT_EMAIL_SENT,
+                extra={
+                    "event": _EVT_EMAIL_SENT,
+                    "kind": "connection_code",
+                    "to_domain": _email_domain(to_email),
+                    "smtp_server": smtp_server,
+                },
+            )
 
-        except smtplib.SMTPException:
+        except smtplib.SMTPException as e:
+            logger.error(
+                _EVT_EMAIL_SMTP_FAILED,
+                extra={
+                    "event": _EVT_EMAIL_SMTP_FAILED,
+                    "kind": "connection_code",
+                    "to_domain": _email_domain(to_email),
+                    "smtp_server": smtp_server,
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
             NayaHttpResponse.internal_error()
 
         except Exception as e:
+            logger.exception(
+                _EVT_EMAIL_SEND_FAILED,
+                extra={
+                    "event": _EVT_EMAIL_SEND_FAILED,
+                    "kind": "connection_code",
+                    "to_domain": _email_domain(to_email),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
         finally:
-            mail.quit()
+            if mail is not None:
+                try:
+                    mail.quit()
+                except Exception:  # noqa: BLE001 - best-effort cleanup
+                    pass

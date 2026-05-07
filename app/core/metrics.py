@@ -108,6 +108,87 @@ COPING_RECORDED = Counter(
     ["category"],  # avoidance | frustration | abandonment
 )
 
+# --- Juegos -------------------------------------------------------------
+
+GAMES_STARTED = Counter(
+    "naya_games_started_total",
+    "Sesiones de juego iniciadas (cuando el cliente consume una vida)",
+    ["game"],  # detective | memociones | y_ese_ruido | otros
+)
+
+GAMES_COMPLETED = Counter(
+    "naya_games_completed_total",
+    "Resultados al cerrar una sesión de juego",
+    ["game", "outcome"],  # outcome: success | failed | abandoned
+)
+
+# --- Energy / vidas -----------------------------------------------------
+
+ENERGY_CONSUMED = Counter(
+    "naya_energy_consumed_total",
+    "Vidas consumidas exitosamente (al iniciar una actividad)",
+)
+
+ENERGY_DEPLETED = Counter(
+    "naya_energy_depleted_total",
+    "Intentos de consumir vida cuando el usuario ya no tiene energía",
+)
+
+ENERGY_RECHARGED_UNITS = Counter(
+    "naya_energy_recharged_units_total",
+    "Unidades de vida recargadas automáticamente por el reloj de la API",
+)
+
+# --- Citas / appointments ----------------------------------------------
+
+APPOINTMENTS_CREATED = Counter(
+    "naya_appointments_created_total",
+    "Citas creadas por el terapeuta",
+)
+
+APPOINTMENTS_CANCELLED = Counter(
+    "naya_appointments_cancelled_total",
+    "Citas canceladas",
+)
+
+APPOINTMENTS_RESCHEDULED = Counter(
+    "naya_appointments_rescheduled_total",
+    "Citas reagendadas",
+)
+
+APPOINTMENTS_COMPLETED = Counter(
+    "naya_appointments_completed_total",
+    "Citas marcadas como completadas",
+)
+
+APPOINTMENT_CONFLICTS = Counter(
+    "naya_appointment_conflicts_total",
+    "Intentos de agenda con choque de horario",
+    ["operation"],  # create | reschedule
+)
+
+# --- Email --------------------------------------------------------------
+
+EMAILS_SENT = Counter(
+    "naya_emails_sent_total",
+    "Emails enviados con éxito",
+    ["kind"],  # verification | connection_code | password_reset
+)
+
+EMAIL_FAILURES = Counter(
+    "naya_email_failures_total",
+    "Fallos al enviar email",
+    ["kind", "reason"],  # reason: smtp | other
+)
+
+# --- Conexiones rechazadas (paciente ↔ terapeuta) ----------------------
+
+THERAPIST_CONNECTION_REJECTED = Counter(
+    "naya_therapist_connection_rejected_total",
+    "Intentos de conexión paciente-terapeuta rechazados",
+    ["reason"],  # unknown_code | unknown_patient | already_linked
+)
+
 # --- Errores por módulo ------------------------------------------------
 
 MODULE_ERRORS = Counter(

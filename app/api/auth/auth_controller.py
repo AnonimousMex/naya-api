@@ -3,6 +3,7 @@ from typing import Union
 from uuid import UUID
 from app.core.logger import logger
 from app.core import metrics
+from app.core import sentry_events as sentry
 
 from sqlmodel import Session, select
 from fastapi import HTTPException, responses
@@ -39,6 +40,13 @@ class AuthController:
             )
 
             if user is False:
+                logger.warning(
+                    "auth.user_not_found",
+                    extra={
+                        "event": "auth.user_not_found",
+                        "email_domain": email.split("@", 1)[1] if "@" in email else "<no-domain>",
+                    },
+                )
                 NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.UNEXISTING_USER.detail,
@@ -54,6 +62,15 @@ class AuthController:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
+            logger.exception(
+                "auth.get_current_user_failed",
+                extra={
+                    "event": "auth.get_current_user_failed",
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     async def verify_code(
@@ -69,9 +86,24 @@ class AuthController:
                 )
 
                 await UserService.verify_user(user_id=user_id, session=self.session)
+                logger.info(
+                    "auth.user_verified",
+                    extra={
+                        "event": "auth.user_verified",
+                        "user_id": str(user_id),
+                        "kind": "signup",
+                    },
+                )
             else:
                 await AuthService.update_verification_code_status(
                     verification_code=verification_code_model, session=self.session
+                )
+                logger.info(
+                    "auth.verification_code_consumed",
+                    extra={
+                        "event": "auth.verification_code_consumed",
+                        "kind": "password_reset",
+                    },
                 )
 
             return NayaHttpResponse.no_content()
@@ -80,6 +112,15 @@ class AuthController:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
+            logger.exception(
+                "auth.verify_code_failed",
+                extra={
+                    "event": "auth.verify_code_failed",
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     async def select_profile_picture(self, request: SelectProfileRequest):
@@ -91,6 +132,14 @@ class AuthController:
             )
 
             if not relation:
+                logger.warning(
+                    "auth.select_profile_user_not_found",
+                    extra={
+                        "event": "auth.select_profile_user_not_found",
+                        "user_id": str(request.user_id),
+                        "animal_id": str(request.id_animal),
+                    },
+                )
                 NayaHttpResponse.not_found(
                     data={
                         "message": NayaResponseCodes.UNEXISTING_USER.detail,
@@ -98,9 +147,30 @@ class AuthController:
                     error_id=NayaResponseCodes.UNEXISTING_USER.code,
                 )
 
+            logger.info(
+                "auth.profile_picture_selected",
+                extra={
+                    "event": "auth.profile_picture_selected",
+                    "user_id": str(request.user_id),
+                    "animal_id": str(request.id_animal),
+                },
+            )
             return NayaHttpResponse.no_content()
 
-        except Exception:
+        except HTTPException:
+            raise
+        except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
+            logger.exception(
+                "auth.select_profile_failed",
+                extra={
+                    "event": "auth.select_profile_failed",
+                    "user_id": str(request.user_id),
+                    "animal_id": str(request.id_animal),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     async def get_verification_code_by_code(
@@ -185,8 +255,21 @@ class AuthController:
                 user_id=user_id, password=password, session=self.session
             )
 
+            logger.info(
+                "auth.password_updated",
+                extra={"event": "auth.password_updated", "user_id": str(user_id)},
+            )
             return NayaHttpResponse.no_content()
-        except HTTPException:
+        except HTTPException as e:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
+            logger.exception(
+                "auth.password_update_failed",
+                extra={
+                    "event": "auth.password_update_failed",
+                    "user_id": str(user_id),
+                    "detail": str(e.detail),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     async def resend_code(self, user: UserModel):
@@ -242,6 +325,14 @@ class AuthController:
             )
 
             if user is False:
+                metrics.AUTH_FAILURES.labels(reason="unknown_email").inc()
+                logger.warning(
+                    "auth.login_unknown_email",
+                    extra={
+                        "event": "auth.login_unknown_email",
+                        "email_domain": email.split("@", 1)[1] if "@" in email else "<no-domain>",
+                    },
+                )
                 NayaHttpResponse.unauthorized()
 
             return user
@@ -249,6 +340,15 @@ class AuthController:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
+            logger.exception(
+                "auth.login_lookup_failed",
+                extra={
+                    "event": "auth.login_lookup_failed",
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
 
     def verify_user_password(self, user: UserModel, password: str) -> bool:
@@ -257,12 +357,28 @@ class AuthController:
         )
 
         if not is_valid_password:
+            metrics.AUTH_FAILURES.labels(reason="invalid_password").inc()
+            logger.warning(
+                "auth.login_invalid_password",
+                extra={
+                    "event": "auth.login_invalid_password",
+                    "user_id": str(user.id),
+                    "role": user.user_kind.value if user.user_kind else None,
+                },
+            )
             NayaHttpResponse.unauthorized()
 
         return True
 
     async def is_user_verified(self, user: UserModel):
         if not user.is_verified:
+            logger.warning(
+                "auth.user_not_verified",
+                extra={
+                    "event": "auth.user_not_verified",
+                    "user_id": str(user.id),
+                },
+            )
             NayaHttpResponse.forbidden(
                 data={
                     "message": NayaResponseCodes.UNVERIFIED_USER.detail,
@@ -305,6 +421,15 @@ class AuthController:
                 },
             )
 
+            # Sentry: leave context so future errors for the same user
+            # within this or subsequent requests can be correlated.
+            sentry.set_user(user_id=str(user.id), role=user.user_kind.value)
+            sentry.breadcrumb(
+                category="auth",
+                message="login.success",
+                data={"role": user.user_kind.value},
+            )
+
             return responses.JSONResponse(
                 content={
                     "status": "Login success",
@@ -335,6 +460,16 @@ class AuthController:
         therapist = AuthService.get_therapist_by_code(self.session, code=code)
         user_id = get_user_id_from_token(token)
         if not therapist:
+            metrics.THERAPIST_CONNECTION_REJECTED.labels(reason="unknown_code").inc()
+            logger.warning(
+                "auth.connect_therapist_unknown_code",
+                extra={
+                    "event": "auth.connect_therapist_unknown_code",
+                    "user_id": str(user_id),
+                    # NO logueamos el código completo (es token de invitación)
+                    "code_prefix": code[:2] if code else None,
+                },
+            )
             NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.UNEXISTING_CODE.detail,
@@ -345,6 +480,15 @@ class AuthController:
 
         patient = AuthService.get_patient_by_user_id(self.session, user_id=user_id)
         if not patient:
+            metrics.THERAPIST_CONNECTION_REJECTED.labels(reason="unknown_patient").inc()
+            logger.warning(
+                "auth.connect_therapist_unknown_patient",
+                extra={
+                    "event": "auth.connect_therapist_unknown_patient",
+                    "user_id": str(user_id),
+                    "therapist_id": str(therapist.id),
+                },
+            )
             NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.UNEXISTING_PATIENT.detail,
@@ -356,6 +500,15 @@ class AuthController:
         if AuthService.connection_exists(
             self.session, therapist_id=therapist.id, patient_id=patient.id
         ):
+            metrics.THERAPIST_CONNECTION_REJECTED.labels(reason="already_linked").inc()
+            logger.warning(
+                "auth.connect_therapist_already_linked",
+                extra={
+                    "event": "auth.connect_therapist_already_linked",
+                    "therapist_id": str(therapist.id),
+                    "patient_id": str(patient.id),
+                },
+            )
             NayaHttpResponse.bad_request(
                 data={
                     "message": NayaResponseCodes.CONNECTION_EXISTS.detail,
@@ -381,6 +534,20 @@ class AuthController:
                 "event": "auth.connection_created",
                 "therapist_id": str(therapist.id),
                 "patient_id": str(patient.id),
+            },
+        )
+
+        # Rare and critical business event → captured as info-level
+        # Issue in Sentry.
+        sentry.track(
+            "patient_therapist.connection.created",
+            level="info",
+            category="business",
+            tags={"event_type": "connection_created"},
+            extras={
+                "therapist_id": str(therapist.id),
+                "patient_id": str(patient.id),
+                "connection_id": str(conn.id),
             },
         )
 

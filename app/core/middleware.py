@@ -3,16 +3,59 @@ Middleware de observabilidad:
 - Genera/propaga X-Request-ID y lo inyecta en contextvars (lo usa el logger).
 - Loguea entrada y salida de cada request con duración.
 - Cuenta excepciones no controladas en metrics.MODULE_ERRORS.
+- Adjunta user (id, role) al scope de Sentry si el request trae JWT válido,
+  para que cada evento de Sentry quede atado al usuario sin tocar controllers.
 """
 import time
 import uuid
 
+import sentry_sdk
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
 from app.core import metrics
 from app.core.logger import logger, request_id_ctx
+
+
+def _enrich_sentry_scope(request: Request, request_id: str) -> None:
+    """
+    Setea user/tags en Sentry de forma defensiva:
+    cualquier fallo aquí NUNCA debe romper el request.
+    """
+    try:
+        sentry_sdk.set_tag("request_id", request_id)
+        sentry_sdk.set_tag("path", request.url.path)
+        sentry_sdk.set_tag("method", request.method)
+
+        auth_header = request.headers.get("authorization") or request.headers.get(
+            "Authorization"
+        )
+        if not auth_header:
+            return
+
+        # Import diferido para evitar ciclos en arranque y no pagar costo cuando no hay token.
+        from app.utils.security import decode_token
+
+        decoded = decode_token(auth_header)
+        if not decoded:
+            return
+
+        user_payload = decoded.get("user") or {}
+        user_id = decoded.get("sub") or user_payload.get("user_id")
+        if user_id:
+            # `username` y `id` son los campos canónicos que Sentry indexa.
+            sentry_sdk.set_user(
+                {
+                    "id": str(user_id),
+                    "username": user_payload.get("name"),
+                    "user_type": user_payload.get("user_type"),
+                }
+            )
+            if user_payload.get("user_type"):
+                sentry_sdk.set_tag("user_type", user_payload["user_type"])
+    except Exception:  # noqa: BLE001 - observabilidad nunca rompe la app
+        pass
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -24,6 +67,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         # Path normalizado para evitar fugar IDs en logs
         path = request.url.path
         method = request.method
+
+        _enrich_sentry_scope(request, rid)
 
         # No spamear el endpoint /metrics
         if path != "/metrics":
