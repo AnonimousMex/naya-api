@@ -109,6 +109,17 @@ async def http_exception_handler(_, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
 
+@app.get("/version", tags=["Diagnostics"])
+async def get_version():
+    """Devuelve metadatos del despliegue actual (útil para health checks
+    y para verificar qué versión/commit está corriendo en cada ambiente)."""
+    return {
+        "project": settings.PROJECT_NAME,
+        "environment": settings.SENTRY_ENVIRONMENT,
+        "release": settings.SENTRY_RELEASE or "unspecified",
+    }
+
+
 @app.get("/sentry-debug", include_in_schema=False)
 async def sentry_debug():
     """
