@@ -9,6 +9,7 @@ from app.api.users.user_schema import UserCreateSchema, UserResponseSchema
 from app.api.users.user_service import UserService
 from app.constants.user_constants import UserRoles, VerificationModels
 from app.core import metrics
+from app.core import sentry_events as sentry
 from app.core.http_response import NayaHttpResponse
 from app.core.logger import logger
 from app.utils.email import EmailService
@@ -59,6 +60,18 @@ class PatientController:
                     "event": "patient.created",
                     "patient_id": str(patient.id),
                     "user_id": str(user.id),
+                },
+            )
+
+            # Business event: new patient registered.
+            sentry.track(
+                "user.registered",
+                level="info",
+                category="onboarding",
+                tags={"role": UserRoles.PATIENT.value},
+                extras={
+                    "user_id": str(user.id),
+                    "patient_id": str(patient.id),
                 },
             )
 

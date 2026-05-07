@@ -3,7 +3,9 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from app.api.energies.energy_model import EnergyModel
+from app.core import metrics
 from app.core.http_response import NayaHttpResponse
+from app.core.logger import logger
 
 class EnergyService:
     @staticmethod
@@ -16,9 +18,25 @@ class EnergyService:
                 session.add(new_energies)
                 session.commit()
                 session.refresh(new_energies)
+                logger.info(
+                    "energy.row_initialized",
+                    extra={
+                        "event": "energy.row_initialized",
+                        "user_id": str(user_id),
+                    },
+                )
                 return new_energies
             return energies
         except Exception as e:
+            logger.exception(
+                "energy.get_current_db_failed",
+                extra={
+                    "event": "energy.get_current_db_failed",
+                    "user_id": str(user_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             raise e
 
     @staticmethod
@@ -49,11 +67,30 @@ class EnergyService:
                 )
                 session.add(energy)
                 session.commit()
-            
+                metrics.ENERGY_RECHARGED_UNITS.inc(energy_to_add)
+                logger.info(
+                    "energy.recharged",
+                    extra={
+                        "event": "energy.recharged",
+                        "user_id": str(user_id),
+                        "added": energy_to_add,
+                        "current_energy": energy.current_energy,
+                    },
+                )
+
             return
-        except Exception:
+        except Exception as e:
+            logger.exception(
+                "energy.recharge_failed",
+                extra={
+                    "event": "energy.recharge_failed",
+                    "user_id": str(user_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()
-    
+
     @staticmethod
     async def consume_energy(session: Session, user_id:UUID):
         try:
@@ -68,5 +105,14 @@ class EnergyService:
             session.commit()
             session.refresh(energy)
             return True
-        except Exception:
+        except Exception as e:
+            logger.exception(
+                "energy.consume_db_failed",
+                extra={
+                    "event": "energy.consume_db_failed",
+                    "user_id": str(user_id),
+                    "error_class": e.__class__.__name__,
+                    "error": str(e),
+                },
+            )
             NayaHttpResponse.internal_error()

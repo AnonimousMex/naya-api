@@ -1,26 +1,26 @@
 """
-Endpoints de diagnóstico que provocan errores realistas para validar la
-captura de Sentry. Cada endpoint genera un tipo de error distinto, así se
-ve cómo se agrupan los Issues en Sentry.
+Diagnostic endpoints that raise realistic errors to validate Sentry
+capture. Each endpoint produces a distinct error type so we can see how
+Issues are grouped in Sentry.
 
-Solo se registra si `SENTRY_ENVIRONMENT != production`. En production los
-endpoints devuelven 404 (manejado al registrar el router).
+Only registered when `SENTRY_ENVIRONMENT != production`. In production
+the endpoints respond 404 (gated when registering the router).
 
-Uso desde curl:
+Usage from curl:
     curl -X POST http://localhost:8000/sentry-debug/<error-type>
 
-Tipos disponibles:
+Available types:
     /sentry-debug                    → ZeroDivisionError
     /sentry-debug/attribute-error    → AttributeError (None.foo)
     /sentry-debug/key-error          → KeyError (dict[missing])
-    /sentry-debug/value-error        → ValueError (UUID inválido)
+    /sentry-debug/value-error        → ValueError (invalid UUID)
     /sentry-debug/type-error         → TypeError (str + int)
-    /sentry-debug/index-error        → IndexError (lista vacía)
+    /sentry-debug/index-error        → IndexError (empty list)
     /sentry-debug/db-bad-query       → SQLAlchemy ProgrammingError
     /sentry-debug/db-integrity       → IntegrityError (UNIQUE violation)
-    /sentry-debug/log-error          → logger.error con exc_info (Sentry via Logging)
-    /sentry-debug/captured-message   → sentry_sdk.capture_message manual
-    /sentry-debug/with-user-context  → error con datos de usuario en el evento
+    /sentry-debug/log-error          → logger.error with exc_info (Sentry via Logging)
+    /sentry-debug/captured-message   → manual sentry_sdk.capture_message
+    /sentry-debug/with-user-context  → error with user payload attached
 """
 from __future__ import annotations
 
@@ -39,53 +39,53 @@ sentry_debug_router = APIRouter(prefix="/sentry-debug", tags=["Sentry Debug"])
 
 @sentry_debug_router.post("/attribute-error", include_in_schema=False)
 async def attribute_error():
-    """Simula acceso a un atributo de un objeto que es None — caso típico
-    cuando una query devuelve None y el código asume que existe."""
-    user = None  # típicamente vendría de session.get(...)
+    """Simulates accessing an attribute on a None object — a common case
+    when a query returns None and the code assumes the object exists."""
+    user = None  # would normally come from session.get(...)
     return {"name": user.name}  # AttributeError: 'NoneType' object has no attribute 'name'
 
 
 @sentry_debug_router.post("/key-error", include_in_schema=False)
 async def key_error():
-    """Simula un payload externo (ej. JWT, API de terceros) que no trae
-    el campo que esperamos."""
+    """Simulates an external payload (e.g. JWT, third-party API) missing
+    the field we expect."""
     payload = {"sub": "abc", "exp": 999}
     return {"role": payload["role"]}  # KeyError: 'role'
 
 
 @sentry_debug_router.post("/value-error", include_in_schema=False)
 async def value_error():
-    """UUID malformado pasado por el frontend."""
+    """Malformed UUID sent by the frontend."""
     return {"id": UUID("not-a-uuid")}  # ValueError: badly formed hexadecimal
 
 
 @sentry_debug_router.post("/type-error", include_in_schema=False)
 async def type_error():
-    """Operación entre tipos incompatibles — típico al concatenar score
-    int con un texto sin convertir."""
+    """Operation between incompatible types — typical when concatenating
+    an int score with a string without converting it."""
     score = 88
     return {"msg": "Score: " + score}  # TypeError: can only concatenate str
 
 
 @sentry_debug_router.post("/index-error", include_in_schema=False)
 async def index_error():
-    """Acceder al primer elemento de una lista vacía — caso del bug que
-    encontramos en /auth/daily al inicio."""
+    """Accessing the first item of an empty list — same shape as the bug
+    we found in /auth/daily early on."""
     advices = []
     return {"advice": advices[0]}  # IndexError: list index out of range
 
 
 @sentry_debug_router.post("/db-bad-query", include_in_schema=False)
 async def db_bad_query(session: SessionDep):
-    """Query a una tabla inexistente — simula el error que vimos cuando
-    no había migraciones aplicadas."""
+    """Query against a non-existent table — mirrors the failure mode we
+    saw before migrations were applied."""
     session.exec(text("SELECT * FROM tabla_que_no_existe"))
     return {"ok": False}
 
 
 @sentry_debug_router.post("/db-integrity", include_in_schema=False)
 async def db_integrity(session: SessionDep):
-    """Viola FK constraint: parent_child con patient_id inexistente."""
+    """Violates an FK constraint: parent_child with a non-existent patient_id."""
     fake_user = uuid4()
     fake_patient = uuid4()
     session.exec(
@@ -100,8 +100,8 @@ async def db_integrity(session: SessionDep):
 
 @sentry_debug_router.post("/log-error", include_in_schema=False)
 async def log_error_no_raise():
-    """logger.error con exc_info → Sentry lo captura via LoggingIntegration
-    aunque no se haga raise. Útil para 'errores silenciosos'."""
+    """logger.error with exc_info → captured by Sentry through the
+    LoggingIntegration even without re-raising. Useful for 'silent failures'."""
     try:
         x = {}["missing_key"]
     except Exception:
@@ -115,8 +115,8 @@ async def log_error_no_raise():
 
 @sentry_debug_router.post("/captured-message", include_in_schema=False)
 async def captured_message():
-    """Mensaje no-error que llega a Sentry como evento de severidad 'warning'.
-    Útil para señales de negocio (ej. abuso detectado, rate-limit, etc)."""
+    """Non-error message reaching Sentry as a 'warning' severity event.
+    Useful for business signals (e.g. abuse detected, rate-limit, etc)."""
     sentry_sdk.capture_message(
         "Suspicious activity detected: 5 failed login attempts in 1 minute",
         level="warning",
@@ -126,20 +126,20 @@ async def captured_message():
 
 @sentry_debug_router.post("/with-user-context", include_in_schema=False)
 async def with_user_context():
-    """Error con scope: agrega user/tag/extra que aparecerán en el evento
-    de Sentry para facilitar el diagnóstico."""
+    """Error inside a scope that carries user/tag/extra data — shows up
+    on the Sentry event to make debugging easier."""
     with sentry_sdk.new_scope() as scope:
         scope.set_user({"id": "demo-user-123", "username": "sofia"})
         scope.set_tag("flow", "memociones")
         scope.set_extra("game_session", {"pairs_matched": 3, "duration_seconds": 45})
-        # Error real adentro del scope
+        # Real error inside the scope
         scores = [80, 75]
-        return {"avg": sum(scores) / scores[2]}  # IndexError captura todo el scope
+        return {"avg": sum(scores) / scores[2]}  # IndexError carries the whole scope
 
 
 @sentry_debug_router.post("/timeout-simulation", include_in_schema=False)
 async def timeout_simulation():
-    """Simula un fallo por timeout en una llamada externa (ej. SMTP/email)."""
+    """Simulates a timeout failure on an external call (e.g. SMTP/email)."""
     raise TimeoutError(
         "SMTP server smtp.gmail.com did not respond within 30s while sending verification code"
     )
@@ -147,8 +147,8 @@ async def timeout_simulation():
 
 @sentry_debug_router.post("/business-rule-violation", include_in_schema=False)
 async def business_rule_violation():
-    """Error de regla de negocio: un niño con energía 0 intenta jugar.
-    No es un crash, pero queremos que Sentry lo registre como warning."""
+    """Business rule violation: a child with 0 energy attempts to play.
+    Not a crash, but we want Sentry to record it as a warning."""
     sentry_sdk.capture_message(
         "Patient attempted to start activity with 0 energy",
         level="warning",

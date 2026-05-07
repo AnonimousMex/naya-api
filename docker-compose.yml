@@ -10,6 +10,17 @@ services:
       - "8000:8000"
     env_file:
       - .env # Loads environment variables from the .env file
+    # --reload is intentionally omitted: uvicorn's reloader hangs when a watched file
+    # changes while requests are in flight. Use `docker compose restart fastapi` to
+    # pick up code changes, or override `command` in docker-compose.override.yml.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/openapi.json', timeout=4).status==200 else 1)"]
+      interval: 20s
+      timeout: 6s
+      retries: 3
+      start_period: 30s
     depends_on:
       - postgres
       - redis

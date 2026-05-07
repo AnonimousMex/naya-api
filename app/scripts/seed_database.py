@@ -363,22 +363,117 @@ def seed_stories_and_questions(
     session: Session, emotions: Dict[str, EmotionModel]
 ) -> List[Tuple[StoryModel, List[QuestionModel]]]:
     """
-    Crea una historia por emoción, con 2 preguntas (cada pregunta con un
-    trigger_category diferente) y 3 answers por pregunta (cada answer con
-    una emoción asociada y un score 1-5).
+    Balanced catalog: 5 stories × 2 questions × 5 answers
+    (one per emotion). Each question is explicitly framed around an actor
+    (self, siblings, friends, father, mother, teachers) so the
+    `trigger_category` field is semantically meaningful — the radar
+    chart in the therapist view actually reflects which actors are
+    present in the child's emotional responses, not arbitrary tags.
+
+    Total: 50 answers (10 per emotion), 10 questions, 5 stories.
+
+    Trigger distribution across the 10 questions:
+        self      x3, siblings x1, friends x2,
+        father    x1, mother   x1, teachers x2
     """
-    triggers_pool = list(TriggerCategories)
     catalog = []
 
+    # Each story carries its dominant emotion. The two questions per
+    # story re-frame the same emotional situation through different
+    # actors. Tuple shape: (text, trigger_category).
     story_defs = [
-        ("Una noche de tormenta", emotions["Miedo"], "Truenos despiertan al niño."),
-        ("Día sin amigos", emotions["Tristeza"], "Nadie quiso jugar."),
-        ("Premio sorpresa", emotions["Felicidad"], "Le dan un regalo inesperado."),
-        ("Juguete roto", emotions["Enojo"], "Su hermano rompió el juguete."),
-        ("Mancha en la ropa", emotions["Vergüenza"], "Una mancha frente a todos."),
+        (
+            "Una noche de tormenta",
+            emotions["Miedo"],
+            "Truenos despiertan al niño.",
+            [
+                ("¿Qué sientes tú cuando truena fuerte?", TriggerCategories.SELF),
+                ("¿Cómo te ayuda tu mamá cuando tienes miedo?", TriggerCategories.MOTHER),
+            ],
+        ),
+        (
+            "Día sin amigos",
+            emotions["Tristeza"],
+            "Nadie quiso jugar conmigo en el recreo.",
+            [
+                ("¿Cómo te sientes cuando tus amigos no te incluyen?", TriggerCategories.FRIENDS),
+                ("¿Qué piensas de ti mismo cuando estás sin compañía?", TriggerCategories.SELF),
+            ],
+        ),
+        (
+            "Premio sorpresa",
+            emotions["Felicidad"],
+            "Le dan un regalo inesperado.",
+            [
+                ("¿Qué le contarías a tu papá sobre lo que te pasó?", TriggerCategories.FATHER),
+                ("¿Cómo crees que reaccionaría tu maestra al verte así?", TriggerCategories.TEACHERS),
+            ],
+        ),
+        (
+            "Juguete roto",
+            emotions["Enojo"],
+            "Su hermano rompió el juguete.",
+            [
+                ("¿Cómo reaccionas cuando un hermano rompe tu cosa?", TriggerCategories.SIBLINGS),
+                ("¿Qué te dices a ti mismo cuando esto te pasa?", TriggerCategories.SELF),
+            ],
+        ),
+        (
+            "Mancha en la ropa",
+            emotions["Vergüenza"],
+            "Una mancha frente a todos.",
+            [
+                ("¿Cómo te sentirías frente a tus maestros con esa mancha?", TriggerCategories.TEACHERS),
+                ("¿Qué pensarían tus amigos cuando te vean así?", TriggerCategories.FRIENDS),
+            ],
+        ),
     ]
 
-    for title, emo, stage1 in story_defs:
+    # Pool por emoción: 5 textos distintos por cada una. Por cada pregunta
+    # se toma 1 de cada emoción (5 opciones balanceadas en cada flow).
+    answer_pool_by_emotion: Dict[str, List[Tuple[str, int]]] = {
+        "Miedo": [
+            ("Me asustan las sombras de mi cuarto.", 4),
+            ("Tengo miedo de estar solo.", 5),
+            ("No quiero dormir sin la luz prendida.", 3),
+            ("Los ruidos fuertes me lastiman.", 3),
+            ("Me da miedo perderme.", 4),
+        ],
+        "Tristeza": [
+            ("Me siento triste cuando nadie me habla.", 4),
+            ("Extraño a alguien que no veo.", 4),
+            ("A veces quiero llorar sin razón.", 3),
+            ("No tengo ganas de jugar.", 4),
+            ("Me siento solo aunque haya gente.", 5),
+        ],
+        "Felicidad": [
+            ("Cuando juego con amigos me siento bien.", 5),
+            ("Cuando me abrazan me siento feliz.", 5),
+            ("Me hace feliz contar lo que aprendí.", 4),
+            ("Me siento bien al ayudar a otros.", 4),
+            ("Me río mucho con mi familia.", 5),
+        ],
+        "Enojo": [
+            ("Me enoja cuando me interrumpen.", 3),
+            ("No me gusta que rompan mis cosas.", 4),
+            ("Me molesta que no me escuchen.", 4),
+            ("Me da rabia cuando pierdo en un juego.", 3),
+            ("Cuando algo no sale me frustro.", 4),
+        ],
+        "Vergüenza": [
+            ("Me da pena equivocarme frente a otros.", 2),
+            ("No me gusta que se rían de mí.", 3),
+            ("Me sonrojo cuando me preguntan en clase.", 2),
+            ("Me da vergüenza pedir ayuda.", 3),
+            ("Prefiero quedarme callado en grupo.", 3),
+        ],
+    }
+
+    # Round-robin pointer per emotion to distribute the 5 answer texts
+    # across the 10 questions in a deterministic, even way.
+    pool_index = {emo: 0 for emo in answer_pool_by_emotion}
+
+    for title, emo, stage1, questions in story_defs:
         story, _ = _get_or_create(
             session,
             StoryModel,
@@ -391,43 +486,25 @@ def seed_stories_and_questions(
             },
         )
         questions_for_story = []
-        for i in range(2):
-            trigger = triggers_pool[(story.title.__hash__() + i) % len(triggers_pool)]
+        for question_text, trigger in questions:
             q, _ = _get_or_create(
                 session,
                 QuestionModel,
                 story_id=story.id,
-                question=f"¿Qué sientes cuando esto pasa? (#{i + 1})",
+                question=question_text,
                 defaults={"trigger_category": trigger.value},
             )
-            # 3 respuestas por pregunta — cubren 3 emociones distintas para
-            # producir distribuciones realistas
-            answer_options = [
-                (
-                    f"Me asustan las sombras que se mueven en mi cuarto.",
-                    emotions["Miedo"],
-                    4,
-                ),
-                (f"Tengo miedo de estar solo.", emotions["Miedo"], 5),
-                (
-                    f"No quiero dormir si no dejan la luz prendida.",
-                    emotions["Miedo"],
-                    3,
-                ),
-                (f"Me siento triste cuando nadie me habla.", emotions["Tristeza"], 4),
-                (f"Cuando juego con amigos me siento bien.", emotions["Felicidad"], 5),
-                (f"Me enoja cuando me interrumpen.", emotions["Enojo"], 3),
-                (f"Me da pena equivocarme frente a otros.", emotions["Vergüenza"], 2),
-                (f"Ruidos fuertes me lastiman.", emotions["Miedo"], 3),
-                (f"Cuando me abrazan me siento feliz.", emotions["Felicidad"], 5),
-            ]
-            for text, emo_obj, score in random.sample(answer_options, 3):
+            # One answer per emotion → balanced catalog guaranteed.
+            for emo_name, options in answer_pool_by_emotion.items():
+                idx = pool_index[emo_name] % len(options)
+                text, score = options[idx]
+                pool_index[emo_name] += 1
                 _get_or_create(
                     session,
                     AnswerModel,
                     question_id=q.id,
                     answer_text=text,
-                    defaults={"emotion_id": emo_obj.id, "score": score},
+                    defaults={"emotion_id": emotions[emo_name].id, "score": score},
                 )
             questions_for_story.append(q)
         catalog.append((story, questions_for_story))
@@ -637,19 +714,21 @@ def seed_tests_and_answers(
     catalog,
 ):
     """
-    Para cada niño crea 8 tests distribuidos en los últimos 90 días con
-    respuestas variadas. Las respuestas tienen sesgos por niño para producir
-    perfiles emocionales distintos:
-      - sofia: alto miedo
-      - mateo: alta tristeza
-      - valentina: feliz
-      - emiliano: enojo + vergüenza
+    Para cada niño crea ~25 tests distribuidos en los últimos 90 días con
+    respuestas variadas. Los perfiles son MENOS extremos que antes para que
+    las gráficas muestren matices reales (no 95%/5% sino 40%/30%/20%/10%/0%).
+    Cada niño sigue teniendo una emoción dominante pero con presencia
+    significativa de otras 2-3.
     """
     profile = {
-        "sofia": {"Miedo": 0.55, "Tristeza": 0.2, "Felicidad": 0.1, "Enojo": 0.1, "Vergüenza": 0.05},
-        "mateo": {"Miedo": 0.15, "Tristeza": 0.55, "Felicidad": 0.15, "Enojo": 0.1, "Vergüenza": 0.05},
-        "valentina": {"Miedo": 0.1, "Tristeza": 0.1, "Felicidad": 0.6, "Enojo": 0.1, "Vergüenza": 0.1},
-        "emiliano": {"Miedo": 0.1, "Tristeza": 0.1, "Felicidad": 0.1, "Enojo": 0.45, "Vergüenza": 0.25},
+        # Sofia: predominio moderado de miedo (~40%) con tristeza secundaria
+        "sofia": {"Miedo": 0.40, "Tristeza": 0.25, "Felicidad": 0.10, "Enojo": 0.10, "Vergüenza": 0.15},
+        # Mateo: tristeza dominante (~40%) con miedo secundario
+        "mateo": {"Miedo": 0.20, "Tristeza": 0.40, "Felicidad": 0.20, "Enojo": 0.10, "Vergüenza": 0.10},
+        # Valentina: predominantemente feliz pero realista (no 95%)
+        "valentina": {"Miedo": 0.10, "Tristeza": 0.10, "Felicidad": 0.50, "Enojo": 0.15, "Vergüenza": 0.15},
+        # Emiliano: enojo+vergüenza juntos ~55%, resto distribuido
+        "emiliano": {"Miedo": 0.15, "Tristeza": 0.10, "Felicidad": 0.20, "Enojo": 0.30, "Vergüenza": 0.25},
     }
 
     coping_pool = list(CopingCategories)
@@ -668,11 +747,17 @@ def seed_tests_and_answers(
     test_count = 0
     answer_count = 0
 
+    # Más tests por niño: 25 c/u × 4 = 100 tests, distribuidos en 90 días
+    # → ~2 tests/semana cada uno. Suficiente para ver evolución semanal.
+    TESTS_PER_KID = 25
+
     for u, p in patients:
         weights = profile.get(u.name, profile["sofia"])
-        for i in range(8):
-            days_ago = random.randint(0, 90)
-            ts = now - timedelta(days=days_ago, hours=random.randint(0, 23))
+        # Distribución temporal: cada niño tiene tests cada 2-5 días.
+        # Esto es más realista que random uniforme.
+        days_offsets = sorted(random.sample(range(0, 90), TESTS_PER_KID))
+        for days_ago in days_offsets:
+            ts = now - timedelta(days=days_ago, hours=random.randint(0, 23), minutes=random.randint(0, 59))
             test = TestModel(
                 user_id=u.id,
                 activity_id=random.choice(activities).id,

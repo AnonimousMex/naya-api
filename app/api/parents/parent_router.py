@@ -10,6 +10,7 @@ from app.api.parents.parent_schema import ChildSchema, TherapistSchema
 from app.core import metrics
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
+from app.core.logger import logger
 
 parent_router = APIRouter()
 
@@ -47,13 +48,22 @@ async def list_therapists(
     try:
         parent_controller = ParentController(session=session)
         therapists = await parent_controller.list_therapists()
-        
+
         return NayaHttpResponse.success(
             data=therapists,  # Devolver directamente la lista de terapeutas
             status=200,
             status_message="Terapeutas obtenidos exitosamente"
         )
     except Exception as e:
+        metrics.MODULE_ERRORS.labels(module="parents").inc()
+        logger.exception(
+            "parent.list_therapists_failed",
+            extra={
+                "event": "parent.list_therapists_failed",
+                "error_class": e.__class__.__name__,
+                "error": str(e),
+            },
+        )
         return NayaHttpResponse.error(
             status=500,
             status_message=f"Error interno del servidor: {str(e)}"
