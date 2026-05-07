@@ -5,8 +5,10 @@ from app.api.auth.auth_service import AuthService
 from app.api.test.test_schema import AnswersList, AnswersRequest, EmotionPercentageResponse, ListTestRequest, PostAnswerRequest, StoriesResponse, TestDetailsReponse, TestDetailsRequest, TestStoriesResponse, TestsResponse
 from app.api.test.test_service import TestService
 from app.constants.response_codes import NayaResponseCodes
+from app.core import metrics
 from app.core.http_response import NayaHttpResponse
-from app.utils.security import decode_token
+from app.core.logger import logger
+from app.utils.security import decode_token, get_user_id_from_token
 
 
 class TestController:
@@ -15,11 +17,13 @@ class TestController:
     
     async def get_stories(self, token: str):
         try:
-            decode = decode_token(token)
-            if decode:
-                user_id = decode.get("sub")
-                
+            user_id = get_user_id_from_token(token)
             test = await TestService.create_test(session=self.session, user_id=user_id)
+            metrics.TESTS_STARTED.inc()
+            logger.info(
+                "test.started",
+                extra={"event": "test.started", "test_id": str(test), "user_id": str(user_id)},
+            )
             stories = await TestService.get_stories(session=self.session)
             response_stories = [
                 StoriesResponse(
@@ -69,14 +73,24 @@ class TestController:
                 )
             
             await TestService.relation_answer_test(
-                session=self.session, 
-                answer_id=request.answer_id, 
+                session=self.session,
+                answer_id=request.answer_id,
                 test_id=request.test_id
+            )
+            metrics.TEST_ANSWERS.inc()
+            logger.info(
+                "test.answer_recorded",
+                extra={
+                    "event": "test.answer_recorded",
+                    "test_id": str(request.test_id),
+                    "answer_id": str(request.answer_id),
+                },
             )
             return NayaHttpResponse.no_content()
         except HTTPException as e:
             raise e
         except Exception:
+            metrics.MODULE_ERRORS.labels(module="test").inc()
             NayaHttpResponse.internal_error()
 
     async def list_answers(self, request: AnswersRequest):

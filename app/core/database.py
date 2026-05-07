@@ -5,6 +5,8 @@ from fastapi import Depends
 from sqlalchemy.sql import text
 from sqlmodel import create_engine, Session
 
+from .logger import logger
+from .metrics import DB_CONNECTION_ERRORS
 from .settings import settings
 
 
@@ -27,7 +29,12 @@ def create_db_and_tables():
             stmt = text("select * from pg_database")
             print(conn.execute(stmt).fetchall())
     except Exception as e:
-        print(f"An error occurred while connecting to the database: {e}")
+        DB_CONNECTION_ERRORS.inc()
+        logger.error(
+            "db.connection_failed",
+            extra={"event": "db.connection_failed", "error": str(e)},
+            exc_info=True,
+        )
 
 
 SessionDep = Annotated[Session, Depends(get_db)]

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
@@ -12,6 +14,13 @@ class Settings(BaseSettings):
     # API Configuration
     API_V1: str
     PROJECT_NAME: str
+
+    # Sentry (todos opcionales: si SENTRY_DSN está vacío, Sentry se desactiva)
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_ENVIRONMENT: str = "local"
+    SENTRY_RELEASE: Optional[str] = None
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.2
+    SENTRY_PROFILES_SAMPLE_RATE: float = 0.0
 
     # Database Configuration
     DB_USER: str

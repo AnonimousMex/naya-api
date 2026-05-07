@@ -1,6 +1,20 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
+
+class AnimalSchema(BaseModel):
+    name: Optional[str] = None
+    color_ui: Optional[str] = None
+    animal_key: Optional[str] = None
+
+
+class ChildSchema(BaseModel):
+    patient_id: str
+    name: str
+    email: str
+    animal: Optional[AnimalSchema] = None
+
+
 class SpecialtySchema(BaseModel):
     name: str
     description: Optional[str] = None

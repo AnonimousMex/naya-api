@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD} # Get the value from the .env file
       POSTGRES_DB: ${DB_NAME} # Get the value from the .env file
     ports:
-      - "5432:5432" # Expose PostgreSQL port
+      - "5433:5432" # Expose PostgreSQL port
 
   redis:
     image: "redis:alpine"
@@ -41,3 +41,38 @@ services:
       - "8001:8001"
     depends_on:
       - postgres
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: naya-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - fastapi
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: naya-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:

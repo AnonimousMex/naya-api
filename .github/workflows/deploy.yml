@@ -1,0 +1,95 @@
+name: 🚀 Deploy to Cloud Run
+
+# Despliegue manual (workflow_dispatch). Permite elegir environment.
+# Si querés despliegue automático en cada push a main, descomenta el bloque
+# `push:` de abajo.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: ["staging", "production"]
+        default: "staging"
+      image_tag:
+        description: "Tag de la imagen (default: latest)"
+        required: false
+        type: string
+        default: "latest"
+  # push:
+  #   branches: ["main"]
+
+env:
+  GCP_REGION: us-central1
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  deploy:
+    name: deploy → cloud run (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      id-token: write # Para Workload Identity Federation (alternativa a SA key)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          # Opción A (más simple): JSON del service account como secret
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          # Opción B (recomendada en prod): usar Workload Identity Federation
+          # workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          # service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: naya-api-${{ inputs.environment }}
+          region: ${{ env.GCP_REGION }}
+          image: ${{ env.IMAGE }}:${{ inputs.image_tag }}
+          flags: |
+            --port=8000
+            --allow-unauthenticated
+            --min-instances=0
+            --max-instances=3
+            --memory=512Mi
+            --cpu=1
+          env_vars: |-
+            PROJECT_NAME=naya-api
+            API_V1=/api/v1
+            JWT_ALGORITHM=HS256
+            SENTRY_ENVIRONMENT=${{ inputs.environment }}
+          # Secrets reales se inyectan desde GCP Secret Manager
+          secrets: |-
+            DB_USER=naya-db-user:latest
+            DB_PASSWORD=naya-db-password:latest
+            DB_NAME=naya-db-name:latest
+            DB_HOST=naya-db-host:latest
+            DB_PORT=naya-db-port:latest
+            JWT_SECRET_KEY=naya-jwt-secret:latest
+            REDIS_HOST=naya-redis-host:latest
+            REDIS_PORT=naya-redis-port:latest
+            SMTP_SERVER=naya-smtp-server:latest
+            SMTP_PORT=naya-smtp-port:latest
+            SMTP_USERNAME=naya-smtp-user:latest
+            SMTP_PASSWORD=naya-smtp-password:latest
+            SENTRY_DSN=naya-sentry-dsn:latest
+
+      - name: Show deployed URL
+        run: |
+          echo "### 🚀 Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- URL: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: \`${{ env.IMAGE }}:${{ inputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY

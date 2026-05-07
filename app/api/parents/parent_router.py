@@ -1,12 +1,37 @@
+from typing import Any, Dict, List
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
+
+from app.api.auth.auth_dependencies import get_current_patient_id
+from app.api.auth.role_dependencies import assert_current_parent
+from app.api.parents.parent_controller import ParentController
+from app.api.parents.parent_schema import ChildSchema, TherapistSchema
+from app.core import metrics
 from app.core.database import SessionDep
 from app.core.http_response import NayaHttpResponse, NayaResponseModel
-from app.api.auth.auth_dependencies import get_current_patient_id
-from app.api.parents.parent_controller import ParentController
-from app.api.parents.parent_schema import TherapistSchema
-from typing import List
 
 parent_router = APIRouter()
+
+
+@parent_router.get(
+    "/parent/children",
+    response_model=NayaResponseModel[List[ChildSchema]],
+)
+def list_children(
+    session: SessionDep,
+    claims: Dict[str, Any] = Depends(assert_current_parent),
+):
+    """
+    Lista los niños vinculados al tutor (PARENT) autenticado.
+    Solo accesible si el rol del token es PARENT.
+    """
+    parent_controller = ParentController(session=session)
+    children = parent_controller.list_children(UUID(claims["user_id"]))
+    metrics.METRICS_VIEW.labels(audience="tutor_list_children").inc()
+    return NayaHttpResponse.ok(
+        data=[c.model_dump(mode="json") for c in children]
+    )
 
 @parent_router.get(
     "/parent/list-therapists", 

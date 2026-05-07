@@ -1,0 +1,388 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Tráfico HTTP",
+      "id": 100,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Requests/sec",
+      "id": 1,
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"naya-fastapi\"}[1m]))",
+          "legendFormat": "rps",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area", "justifyMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Latencia p95",
+      "id": 2,
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"naya-fastapi\"}[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.3 }, { "color": "red", "value": 1 }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (5xx)",
+      "id": 3,
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(http_requests_total{job=\"naya-fastapi\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"naya-fastapi\"}[5m])), 1)",
+          "legendFormat": "5xx %",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "In-flight",
+      "id": 4,
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(http_requests_inprogress{job=\"naya-fastapi\"})",
+          "legendFormat": "in-flight",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "blue", "value": null }, { "color": "yellow", "value": 10 }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "API up",
+      "id": 5,
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "naya_api_up",
+          "legendFormat": "up",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }, "mappings": [{ "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } }, "type": "value" }] } }
+    },
+    {
+      "type": "stat",
+      "title": "Memoria proceso (RSS)",
+      "id": 6,
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"naya-fastapi\"}",
+          "legendFormat": "rss",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "blue", "value": null }, { "color": "yellow", "value": 524288000 }, { "color": "red", "value": 1073741824 }] } } }
+    },
+
+    {
+      "type": "heatmap",
+      "title": "Latency heatmap (todos los endpoints)",
+      "id": 10,
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (le) (rate(http_request_duration_seconds_bucket{job=\"naya-fastapi\"}[2m]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "color": { "mode": "scheme", "scheme": "Spectral", "steps": 64, "exponent": 0.5, "min": 0 },
+        "yAxis": { "axisPlacement": "left", "unit": "s" },
+        "rowsFrame": { "layout": "auto" },
+        "cellGap": 1,
+        "tooltip": { "show": true, "yHistogram": true },
+        "exemplars": { "color": "rgba(255,0,255,0.7)" },
+        "legend": { "show": true }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latencia p50 / p95 / p99",
+      "id": 11,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, sum(rate(http_request_duration_seconds_bucket{job=\"naya-fastapi\"}[5m])) by (le))", "legendFormat": "p50", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"naya-fastapi\"}[5m])) by (le))", "legendFormat": "p95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"naya-fastapi\"}[5m])) by (le))", "legendFormat": "p99", "refId": "C" }
+      ]
+    },
+
+    {
+      "type": "bargauge",
+      "title": "Top endpoints (rps)",
+      "id": 20,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (handler) (rate(http_requests_total{job=\"naya-fastapi\"}[5m])))",
+          "legendFormat": "{{handler}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true, "valueMode": "color" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "continuous-GrYlRd" }, "min": 0 } }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP errores por status",
+      "id": 21,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 25, "stacking": { "mode": "normal" }, "lineWidth": 1 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(http_requests_total{job=\"naya-fastapi\",status=~\"4..|5..\"}[5m]))",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "title": "Engagement de los niños",
+      "id": 200,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "collapsed": false
+    },
+
+    {
+      "type": "heatmap",
+      "title": "Distribución de scores (heatmap)",
+      "id": 30,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (le) (increase(naya_activity_score_bucket[5m]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "color": { "mode": "scheme", "scheme": "Turbo", "steps": 64, "exponent": 0.5, "min": 0 },
+        "yAxis": { "axisPlacement": "left", "unit": "short" },
+        "cellGap": 1,
+        "tooltip": { "show": true, "yHistogram": true }
+      }
+    },
+    {
+      "type": "heatmap",
+      "title": "Distribución de duración de actividades",
+      "id": 31,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (le) (increase(naya_activity_duration_seconds_observed_bucket[5m]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "color": { "mode": "scheme", "scheme": "Cividis", "steps": 64, "exponent": 0.5, "min": 0 },
+        "yAxis": { "axisPlacement": "left", "unit": "s" },
+        "cellGap": 1,
+        "tooltip": { "show": true, "yHistogram": true }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Actividades cerradas (rate)",
+      "id": 32,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 31 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 30, "lineWidth": 2, "showPoints": "never" }, "color": { "mode": "palette-classic" } } },
+      "targets": [
+        { "expr": "sum(rate(naya_activity_results_total[5m]))", "legendFormat": "activity_results", "refId": "A" },
+        { "expr": "sum(rate(naya_tests_started_total[5m]))", "legendFormat": "tests_started", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Respuestas por minuto",
+      "id": 33,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 31 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 20, "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "sum(rate(naya_test_answers_total[1m])) * 60", "legendFormat": "answers/min", "refId": "A" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Score promedio (5m)",
+      "id": 34,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 31 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(naya_activity_score_sum[5m])) / clamp_min(sum(rate(naya_activity_score_count[5m])), 1)",
+          "legendFormat": "score promedio",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "min": 0, "max": 100, "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 75 }] } } }
+    },
+
+    {
+      "type": "row",
+      "title": "Insights emocionales",
+      "id": 300,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+      "collapsed": false
+    },
+
+    {
+      "type": "piechart",
+      "title": "Emociones detectadas (mix)",
+      "id": 40,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (emotion) (naya_emotions_detected_total)",
+          "legendFormat": "{{emotion}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "displayLabels": ["percent"],
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Emociones detectadas (timeline)",
+      "id": 41,
+      "gridPos": { "h": 8, "w": 10, "x": 8, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 15, "lineWidth": 2, "showPoints": "never" }, "color": { "mode": "palette-classic" } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "sum by (emotion) (rate(naya_emotions_detected_total[5m]))",
+          "legendFormat": "{{emotion}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Coping reportado",
+      "id": 42,
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (category) (naya_coping_recorded_total)",
+          "legendFormat": "{{category}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true },
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlPu" } } }
+    },
+
+    {
+      "type": "row",
+      "title": "Auth & seguridad",
+      "id": 400,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 },
+      "collapsed": false
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Logins por rol vs auth failures",
+      "id": 50,
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 20, "lineWidth": 2 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        { "expr": "sum by (role) (rate(naya_login_success_total[5m]))", "legendFormat": "ok {{role}}", "refId": "A" },
+        { "expr": "sum by (reason) (rate(naya_auth_failures_total[5m]))", "legendFormat": "fail {{reason}}", "refId": "B" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Vistas de métricas (terapeuta vs tutor)",
+      "id": 51,
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 25, "stacking": { "mode": "normal" }, "lineWidth": 1 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "sum by (audience) (rate(naya_metrics_view_total[5m]))",
+          "legendFormat": "{{audience}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["naya", "fastapi"],
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Naya API — Overview",
+  "uid": "naya-overview",
+  "version": 2,
+  "weekStart": ""
+}

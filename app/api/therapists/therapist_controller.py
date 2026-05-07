@@ -8,7 +8,9 @@ from datetime import date, time
 from app.api.auth.auth_service import AuthService
 from app.api.therapists.therapist_services import TherapistService
 from app.constants.response_codes import NayaResponseCodes
+from app.core import metrics
 from app.core.http_response import NayaHttpResponse
+from app.core.logger import logger
 
 from app.constants.user_constants import UserRoles, VerificationModels
 
@@ -16,7 +18,7 @@ from app.api.users.user_service import UserService
 from app.api.users.user_controller import UserController
 from app.api.users.user_schema import UserCreateSchema, UserResponseSchema
 from app.utils.email import EmailService
-from app.utils.security import decode_token
+from app.utils.security import decode_token, get_user_id_from_token
 from fastapi.encoders import jsonable_encoder
 
 
@@ -76,6 +78,18 @@ class TherapistController:
                 verification_code=conection_code.code_conection,
             )
 
+            metrics.USERS_REGISTERED.labels(role=UserRoles.THERAPIST.value).inc()
+            metrics.VERIFICATION_CODES_GENERATED.labels(kind="signup").inc()
+            metrics.VERIFICATION_CODES_GENERATED.labels(kind="connection").inc()
+            logger.info(
+                "therapist.created",
+                extra={
+                    "event": "therapist.created",
+                    "therapist_id": str(therapist.id),
+                    "user_id": str(user.id),
+                },
+            )
+
             user_dump = UserResponseSchema.model_validate(user).model_dump()
 
             response = TherapistResponseSchema(**user_dump, therapist_id=therapist.id)
@@ -85,7 +99,13 @@ class TherapistController:
         except HTTPException as e:
             raise e
 
-        except Exception:
+        except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="therapists").inc()
+            logger.error(
+                "therapist.create_error",
+                extra={"event": "therapist.create_error", "error": str(e)},
+                exc_info=True,
+            )
             NayaHttpResponse.internal_error()
 
     async def get_therapist_by_id(self, therapist_id: UUID) -> TherapistResponseSchema:
@@ -116,14 +136,10 @@ class TherapistController:
             NayaHttpResponse.internal_error()
 
     async def create_appointment(
-        self, token: str, patient_id: UUID, date: date, time: time 
+        self, token: str, patient_id: UUID, date: date, time: time
     ) -> AppointmentResponse:
         try:
-            decoded = decode_token(token)
-          
-            if decoded:
-                user_id = decoded.get("sub")
-            
+            user_id = get_user_id_from_token(token)
             therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
 
             if TherapistService.appointment_exists(
@@ -167,12 +183,7 @@ class TherapistController:
 
     async def list_appointments(self, token: str, patient_id: UUID | None = None) -> AppointmentResponse:
         try:
-
-            decoded = decode_token(token)
-
-            if decoded:
-                user_id = decoded.get("sub")
-            
+            user_id = get_user_id_from_token(token)
             therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
 
             appointments = await TherapistService.list_appointments( self.session, therapist_id=therapist.id, patient_id=patient_id)
@@ -192,11 +203,7 @@ class TherapistController:
           
     async def reschedule_appointment(self, token: str, appointment_id: UUID, date: date, time: time) -> AppointmentResponse:
         try:
-            decoded = decode_token(token)
-          
-            if decoded:
-                user_id = decoded.get("sub")
-            
+            user_id = get_user_id_from_token(token)
             therapist = AuthService.get_therapist_by_user_id(self.session, user_id=user_id)
 
             if TherapistService.appointment_exists(

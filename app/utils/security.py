@@ -49,6 +49,8 @@ def create_access_token(
 
 def decode_token(token: str) -> Optional[dict]:
     try:
+        if token and token.lower().startswith("bearer "):
+            token = token.split(" ", 1)[1].strip()
         token_data = jwt.decode(
             jwt=token, key=settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
@@ -59,21 +61,35 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
+def get_user_id_from_token(token: str) -> str:
+    """
+    Decodifica el token y devuelve `user_id` (campo `sub` del JWT).
+    Lanza HTTPException 401 si el token es inválido, expirado o no trae sub.
+    Acepta tanto el JWT puro como el header `Bearer <jwt>`.
+    """
+    from fastapi import HTTPException, status
+
+    decoded = decode_token(token)
+    if not decoded or not decoded.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+    return decoded["sub"]
+
+
 def get_user_token(
     user: UserModel,
     user_type: UserRoles,
     is_refresh: bool,
-    patient_or_therapist_id: UUID,
+    patient_or_therapist_id: Optional[UUID],
 ) -> str:
-    custom_id_key_name = (
-        "patient_id" if user_type == UserRoles.PATIENT.value else "therapist_id"
-    )
     animal_id = None
     code_connection = None
-    
+
     if user_type == UserRoles.PATIENT.value and hasattr(user, "patient") and user.patient:
         animal_id = str(user.patient.animal_id) if user.patient.animal_id else None
-    
+
     if user_type == UserRoles.THERAPIST.value and hasattr(user, "therapist") and user.therapist:
         code_connection = user.therapist.code_conection
 
@@ -82,11 +98,16 @@ def get_user_token(
         "user_id": str(user.id),
         "name": user.name,
         "user_type": user_type,
-        custom_id_key_name: str(patient_or_therapist_id),
     }
+    # Sólo terapeuta/paciente llevan id específico de rol; el tutor (PARENT) no.
+    if patient_or_therapist_id is not None:
+        if user_type == UserRoles.PATIENT.value:
+            user_data["patient_id"] = str(patient_or_therapist_id)
+        elif user_type == UserRoles.THERAPIST.value:
+            user_data["therapist_id"] = str(patient_or_therapist_id)
     if animal_id is not None:
         user_data["animal_id"] = animal_id
-    
+
     if code_connection is not None:
         user_data["code_connection"] = code_connection
 

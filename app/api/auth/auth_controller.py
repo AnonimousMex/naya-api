@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Union
 from uuid import UUID
 from app.core.logger import logger
+from app.core import metrics
 
 from sqlmodel import Session, select
 from fastapi import HTTPException, responses
@@ -22,7 +23,7 @@ from app.api.auth.auth_schema import (
     SelectProfileRequest,
 )
 from app.utils.email import EmailService
-from app.utils.security import get_user_token, verify_password, decode_token
+from app.utils.security import get_user_token, verify_password, decode_token, get_user_id_from_token
 
 from .auth_model import VerificationCodeModel, VerificationCodePasswordResetModel
 
@@ -159,12 +160,23 @@ class AuthController:
                 verification_code=verification_code.code,
             )
 
+            metrics.VERIFICATION_CODES_GENERATED.labels(kind="password_reset").inc()
+            logger.info(
+                "auth.verification_code_generated",
+                extra={
+                    "event": "auth.verification_code_generated",
+                    "kind": "password_reset",
+                    "user_id": str(user.id),
+                },
+            )
+
             return NayaHttpResponse.no_content()
 
         except HTTPException as e:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
             NayaHttpResponse.internal_error()
 
     async def update_user_password(self, user_id: UUID, password: str):
@@ -196,8 +208,19 @@ class AuthController:
                 verification_code=verification_code.code,
             )
 
+            metrics.VERIFICATION_CODES_GENERATED.labels(kind="signup_resend").inc()
+            logger.info(
+                "auth.verification_code_resent",
+                extra={
+                    "event": "auth.verification_code_resent",
+                    "kind": "signup_resend",
+                    "user_id": str(user.id),
+                },
+            )
+
             return NayaHttpResponse.no_content()
         except HTTPException:
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
             NayaHttpResponse.internal_error()
 
     def verify_is_code_alive(self, verification_code: VerificationCodeModel) -> bool:
@@ -249,11 +272,14 @@ class AuthController:
 
     async def login(self, user: UserModel, password: str):
         try:
-            patient_or_therapist_id = (
-                user.patient.id
-                if user.user_kind == UserRoles.PATIENT
-                else user.therapist.id
-            )
+            if user.user_kind == UserRoles.PATIENT:
+                patient_or_therapist_id = user.patient.id if user.patient else None
+            elif user.user_kind == UserRoles.THERAPIST:
+                patient_or_therapist_id = (
+                    user.therapist.id if user.therapist else None
+                )
+            else:  # PARENT u otro: no aplica patient_id ni therapist_id
+                patient_or_therapist_id = None
 
             access_token = get_user_token(
                 user=user,
@@ -269,10 +295,16 @@ class AuthController:
                 patient_or_therapist_id=patient_or_therapist_id,
             )
 
+            metrics.LOGIN_SUCCESS.labels(role=user.user_kind.value).inc()
             logger.info(
-                f"Inicio de sesión exitoso para el usuario: {user.email} (Rol: {user.user_kind.value})"
+                "auth.login_success",
+                extra={
+                    "event": "auth.login_success",
+                    "user_id": str(user.id),
+                    "role": user.user_kind.value,
+                },
             )
-            
+
             return responses.JSONResponse(
                 content={
                     "status": "Login success",
@@ -282,18 +314,26 @@ class AuthController:
                 }
             )
         except HTTPException as e:
-            logger.warning(f"Intento de login fallido: {str(e.detail)}")
+            metrics.AUTH_FAILURES.labels(reason="http_exception").inc()
+            logger.warning(
+                "auth.login_failed",
+                extra={"event": "auth.login_failed", "detail": str(e.detail)},
+            )
             raise e
 
         except Exception as e:
-            logger.error(f"Error crítico en login: {str(e)}", exc_info=True)
+            metrics.AUTH_FAILURES.labels(reason="internal_error").inc()
+            metrics.MODULE_ERRORS.labels(module="auth").inc()
+            logger.error(
+                "auth.login_error",
+                extra={"event": "auth.login_error", "error": str(e)},
+                exc_info=True,
+            )
             NayaHttpResponse.internal_error()
 
     async def connect_therapist(self, *, token: str, code: str):
         therapist = AuthService.get_therapist_by_code(self.session, code=code)
-        decoded = decode_token(token)
-        if decoded:
-            user_id = decoded.get("sub")
+        user_id = get_user_id_from_token(token)
         if not therapist:
             NayaHttpResponse.bad_request(
                 data={
@@ -333,6 +373,16 @@ class AuthController:
         patient.is_connected = True
         self.session.add(patient)
         self.session.commit()
+
+        metrics.PATIENT_THERAPIST_CONNECTIONS.inc()
+        logger.info(
+            "auth.connection_created",
+            extra={
+                "event": "auth.connection_created",
+                "therapist_id": str(therapist.id),
+                "patient_id": str(patient.id),
+            },
+        )
 
         return NayaHttpResponse.no_content()
 

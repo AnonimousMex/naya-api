@@ -6,18 +6,16 @@ from app.api.energies.energy_schema import EnergyReponseSchema
 from app.api.energies.energy_service import EnergyService
 from app.constants.response_codes import NayaResponseCodes
 from app.core.http_response import NayaHttpResponse
-from app.utils.security import decode_token
+from app.utils.security import decode_token, get_user_id_from_token
 
 
 class EnergyController:
     def __init__(self, session: Session):
         self.session = session
-    
+
     async def get_current_energies(self, token: str):
         try:
-            decode = decode_token(token)
-            if decode:
-                user_id = decode.get("sub")
+            user_id = get_user_id_from_token(token)
             await EnergyService.recharge_energy(self.session, user_id=user_id)
             energies = await EnergyService.get_current_energies(self.session, user_id=user_id)
 
@@ -26,13 +24,10 @@ class EnergyController:
             )
         except HTTPException as e:
             raise e
-            NayaHttpResponse.internal_error()
-    
+
     async def consume_user_energy(self, token: str):
         try:
-            decode=decode_token(token)
-            if decode:
-                user_id = decode.get("sub")
+            user_id = get_user_id_from_token(token)
             if await EnergyService.consume_energy(self.session, user_id=user_id) == False:
                 NayaHttpResponse.bad_request(
                     data={

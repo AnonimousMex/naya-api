@@ -1,14 +1,60 @@
 from typing import List
+from uuid import UUID
+
 from sqlmodel import Session, select
-from app.api.therapists.therapist_model import TherapistModel
+
+from app.api.animals.animal_model import AnimalModel
+from app.api.parents.parent_model import ParentChildModel
+from app.api.parents.parent_schema import (
+    AnimalSchema,
+    ChildSchema,
+    SpecialtySchema,
+    TherapistSchema,
+)
+from app.api.patients.patient_model import PatientModel
 from app.api.professional_experience.professional_experience_model import ProfessionalExperienceModel
 from app.api.specialties.specialty_model import SpecialtyModel, SpecialtyTherapistModel
+from app.api.therapists.therapist_model import TherapistModel
 from app.models.user_model import UserModel
-from app.api.parents.parent_schema import TherapistSchema, SpecialtySchema
+
 
 class ParentController:
     def __init__(self, session: Session):
         self.session = session
+
+    def list_children(self, parent_user_id: UUID) -> List[ChildSchema]:
+        """
+        Devuelve los niños vinculados al tutor logueado, con los datos
+        mínimos para que el frontend pueda mostrar un selector.
+        """
+        stmt = (
+            select(PatientModel, UserModel, AnimalModel)
+            .join(UserModel, UserModel.id == PatientModel.user_id)
+            .join(
+                ParentChildModel,
+                ParentChildModel.patient_id == PatientModel.id,
+            )
+            .join(AnimalModel, AnimalModel.id == PatientModel.animal_id, isouter=True)
+            .where(ParentChildModel.parent_user_id == parent_user_id)
+        )
+        rows = self.session.exec(stmt).all()
+        children: List[ChildSchema] = []
+        for patient, user, animal in rows:
+            children.append(
+                ChildSchema(
+                    patient_id=str(patient.id),
+                    name=user.name,
+                    email=user.email,
+                    animal=AnimalSchema(
+                        name=animal.name,
+                        color_ui=animal.color_ui,
+                        animal_key=animal.animal_key,
+                    )
+                    if animal is not None
+                    else None,
+                )
+            )
+        return children
 
     async def list_therapists(self) -> List[TherapistSchema]:
         statement = select(

@@ -8,7 +8,9 @@ from app.api.users.user_controller import UserController
 from app.api.users.user_schema import UserCreateSchema, UserResponseSchema
 from app.api.users.user_service import UserService
 from app.constants.user_constants import UserRoles, VerificationModels
+from app.core import metrics
 from app.core.http_response import NayaHttpResponse
+from app.core.logger import logger
 from app.utils.email import EmailService
 
 
@@ -49,6 +51,17 @@ class PatientController:
                 verification_code=verification_code.code,
             )
 
+            metrics.USERS_REGISTERED.labels(role=UserRoles.PATIENT.value).inc()
+            metrics.VERIFICATION_CODES_GENERATED.labels(kind="signup").inc()
+            logger.info(
+                "patient.created",
+                extra={
+                    "event": "patient.created",
+                    "patient_id": str(patient.id),
+                    "user_id": str(user.id),
+                },
+            )
+
             user_dump = UserResponseSchema.model_validate(user).model_dump()
 
             response = PatientResponseSchema(**user_dump, patient_id=patient.id)
@@ -59,4 +72,10 @@ class PatientController:
             raise e
 
         except Exception as e:
+            metrics.MODULE_ERRORS.labels(module="patients").inc()
+            logger.error(
+                "patient.create_error",
+                extra={"event": "patient.create_error", "error": str(e)},
+                exc_info=True,
+            )
             NayaHttpResponse.internal_error(e)

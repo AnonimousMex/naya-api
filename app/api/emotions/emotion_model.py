@@ -77,6 +77,10 @@ class TestAnswerModel(BaseNayaModel, table=True):
 
     test_id: UUID = Field(foreign_key="tests.id", nullable=False)
     answer_id: UUID = Field(foreign_key="answers.id", nullable=False)
+    # Intensidad emocional (0-100) y categoría de afrontamiento detectada en
+    # la respuesta. Nullable: respuestas históricas no las tienen.
+    emotion_intensity: Optional[int] = Field(default=None, ge=0, le=100)
+    coping_category: Optional[str] = Field(default=None, max_length=20)
 
     test: "TestModel" = Relationship(back_populates="testAnswer") # type: ignore
     answer: "AnswerModel" = Relationship(back_populates="testAnswer") # type: ignore

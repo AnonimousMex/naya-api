@@ -5,7 +5,7 @@ from app.core.http_response import NayaHttpResponse
 from app.api.badges.badge_schema import BadgeResponseModel
 from app.constants.response_codes import NayaResponseCodes
 from app.api.badges.badge_service import BadgeService
-from app.utils.security import decode_token
+from app.utils.security import decode_token, get_user_id_from_token
 from fastapi.encoders import jsonable_encoder
 
 
@@ -17,11 +17,7 @@ class BadgeController:
 
     async def unlock_badge(self, token: str, badge_title: str) -> BadgeResponseModel:
         try:
-            decoded = decode_token(token)
-          
-            if decoded:
-                user_id = decoded.get("sub")
-            
+            user_id = get_user_id_from_token(token)
             if await BadgeService.badge_exists(
             self.session, user_id=user_id, badge_title=badge_title
             ):
@@ -52,11 +48,7 @@ class BadgeController:
 
     def get_badges(self, token: str) -> list[BadgeResponseModel]:
         try:
-            decoded = decode_token(token)
-          
-            if decoded:
-                user_id = decoded.get("sub")
-    
+            user_id = get_user_id_from_token(token)
             return BadgeService.get_badges(self.session, user_id)
         except HTTPException as e:
             raise e
