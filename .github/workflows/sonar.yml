@@ -1,0 +1,83 @@
+name: SonarQube Cloud analysis
+
+on:
+  push:
+    branches: [main, develop, stage, local-deployment]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonar:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          # Fetch full history so Sonar puede hacer blame y comparar branches.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps + pytest-cov
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-cov==5.0.0
+
+      - name: Run pytest with coverage (generates coverage.xml for Sonar)
+        # Mismas env vars que el workflow tests.yml para que la app pueda
+        # importar settings sin romper. `|| true` evita fallar el job si
+        # algún test revienta — solo nos importa que se genere coverage.xml.
+        env:
+          PROJECT_NAME: naya-api
+          API_V1: /api/v1
+          DB_USER: postgres
+          DB_PASSWORD: ci
+          DB_NAME: naya
+          DB_HOST: localhost
+          DB_PORT: 5432
+          JWT_SECRET_KEY: ci-test-secret-please-change-in-prod-32bytes
+          JWT_ALGORITHM: HS256
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          SMTP_SERVER: smtp.example.com
+          SMTP_PORT: 587
+          SMTP_USERNAME: ci@example.com
+          SMTP_PASSWORD: ci-pass
+          SENTRY_DSN: ""
+          SENTRY_ENVIRONMENT: ci
+        run: |
+          # `--cov=.` (no `--cov=app`) para que coverage.xml emita paths
+          # con prefijo "app/", que es lo que Sonar busca. Filtros y omit
+          # viven en .coveragerc en la raíz del repo.
+          pytest tests/ --cov=. --cov-report=xml:coverage.xml || true
+
+      - name: Verify coverage.xml was generated
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "::error::coverage.xml was NOT generated. pytest probably failed during import. Removing '|| true' would surface the real error."
+            echo "Files in workspace root:"
+            ls -la
+            exit 1
+          fi
+          echo "coverage.xml exists ($(wc -l < coverage.xml) lines)"
+          echo "First 5 source paths Sonar will look for:"
+          grep -oE 'filename="[^"]+"' coverage.xml | head -5
+
+      - name: Verify SONAR_TOKEN is reaching the runner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN is missing or empty. Check Settings → Secrets and variables → Actions → Repository secrets. Name must be exactly SONAR_TOKEN."
+            exit 1
+          fi
+          echo "SONAR_TOKEN is set (length=${#SONAR_TOKEN})"
+
+      - name: SonarQube Cloud scan
+        uses: SonarSource/sonarqube-scan-action@13990a695682794b53148ff9f6a8b6e22e43955e  # v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
