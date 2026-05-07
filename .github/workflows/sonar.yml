@@ -11,12 +11,12 @@ jobs:
     name: Static analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           # Fetch full history so Sonar puede hacer blame y comparar branches.
           fetch-depth: 0
 
       - name: SonarQube Cloud scan
-        uses: SonarSource/sonarqube-scan-action@v3
+        uses: SonarSource/sonarqube-scan-action@13990a695682794b53148ff9f6a8b6e22e43955e  # v3
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
