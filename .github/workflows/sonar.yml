@@ -16,42 +16,6 @@ jobs:
           # Fetch full history so Sonar puede hacer blame y comparar branches.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install deps + pytest-cov
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-cov==5.0.0
-
-      - name: Run pytest with coverage (generates coverage.xml for Sonar)
-        # Mismas env vars que el workflow tests.yml para que la app pueda
-        # importar settings sin romper. `|| true` evita fallar el job si
-        # algún test revienta — solo nos importa que se genere coverage.xml.
-        env:
-          PROJECT_NAME: naya-api
-          API_V1: /api/v1
-          DB_USER: postgres
-          DB_PASSWORD: ci
-          DB_NAME: naya
-          DB_HOST: localhost
-          DB_PORT: 5432
-          JWT_SECRET_KEY: ci-test-secret-please-change-in-prod-32bytes
-          JWT_ALGORITHM: HS256
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          SMTP_SERVER: smtp.example.com
-          SMTP_PORT: 587
-          SMTP_USERNAME: ci@example.com
-          SMTP_PASSWORD: ci-pass
-          SENTRY_DSN: ""
-          SENTRY_ENVIRONMENT: ci
-        run: |
-          pytest tests/ --cov=app --cov-report=xml:coverage.xml || true
-
       - name: Verify SONAR_TOKEN is reaching the runner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
