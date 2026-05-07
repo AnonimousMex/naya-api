@@ -26,6 +26,9 @@ from fastapi.encoders import jsonable_encoder
 from .therapist_schema import TherapistResponseSchema, TherapistCreateSchema, AppointmentRequest, AppointmentResponse
 
 
+_EVT_APPOINTMENT_CONFLICT = "appointment.conflict"
+
+
 class TherapistController:
     def __init__(self, session: Session):
         self.session = session
@@ -178,9 +181,9 @@ class TherapistController:
             ):
                 metrics.APPOINTMENT_CONFLICTS.labels(operation="create").inc()
                 logger.warning(
-                    "appointment.conflict",
+                    _EVT_APPOINTMENT_CONFLICT,
                     extra={
-                        "event": "appointment.conflict",
+                        "event": _EVT_APPOINTMENT_CONFLICT,
                         "therapist_id": str(therapist.id),
                         "patient_id": str(patient_id),
                         "date": str(date),
@@ -316,9 +319,9 @@ class TherapistController:
             ):
                 metrics.APPOINTMENT_CONFLICTS.labels(operation="reschedule").inc()
                 logger.warning(
-                    "appointment.conflict",
+                    _EVT_APPOINTMENT_CONFLICT,
                     extra={
-                        "event": "appointment.conflict",
+                        "event": _EVT_APPOINTMENT_CONFLICT,
                         "therapist_id": str(therapist.id),
                         "appointment_id": str(appointment_id),
                         "date": str(date),

@@ -10,6 +10,11 @@ from app.core.http_response import NayaHttpResponse
 from app.constants.email_template import new_user_verification_code_email_tempalte
 
 
+_EVT_EMAIL_SENT = "email.sent"
+_EVT_EMAIL_SMTP_FAILED = "email.smtp_failed"
+_EVT_EMAIL_SEND_FAILED = "email.send_failed"
+
+
 def _email_domain(email: str) -> str:
     return email.split("@", 1)[1] if "@" in email else "<no-domain>"
 
@@ -53,9 +58,9 @@ class EmailService:
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
             logger.info(
-                "email.sent",
+                _EVT_EMAIL_SENT,
                 extra={
-                    "event": "email.sent",
+                    "event": _EVT_EMAIL_SENT,
                     "kind": "verification",
                     "to_domain": _email_domain(to_email),
                     "smtp_server": smtp_server,
@@ -64,9 +69,9 @@ class EmailService:
 
         except smtplib.SMTPException as e:
             logger.error(
-                "email.smtp_failed",
+                _EVT_EMAIL_SMTP_FAILED,
                 extra={
-                    "event": "email.smtp_failed",
+                    "event": _EVT_EMAIL_SMTP_FAILED,
                     "kind": "verification",
                     "to_domain": _email_domain(to_email),
                     "smtp_server": smtp_server,
@@ -79,9 +84,9 @@ class EmailService:
 
         except Exception as e:
             logger.exception(
-                "email.send_failed",
+                _EVT_EMAIL_SEND_FAILED,
                 extra={
-                    "event": "email.send_failed",
+                    "event": _EVT_EMAIL_SEND_FAILED,
                     "kind": "verification",
                     "to_domain": _email_domain(to_email),
                     "error_class": e.__class__.__name__,
@@ -135,9 +140,9 @@ class EmailService:
             mail.login(smtp_username, smtp_password)
             mail.sendmail(smtp_username, to_email, msg.as_string())
             logger.info(
-                "email.sent",
+                _EVT_EMAIL_SENT,
                 extra={
-                    "event": "email.sent",
+                    "event": _EVT_EMAIL_SENT,
                     "kind": "connection_code",
                     "to_domain": _email_domain(to_email),
                     "smtp_server": smtp_server,
@@ -146,9 +151,9 @@ class EmailService:
 
         except smtplib.SMTPException as e:
             logger.error(
-                "email.smtp_failed",
+                _EVT_EMAIL_SMTP_FAILED,
                 extra={
-                    "event": "email.smtp_failed",
+                    "event": _EVT_EMAIL_SMTP_FAILED,
                     "kind": "connection_code",
                     "to_domain": _email_domain(to_email),
                     "smtp_server": smtp_server,
@@ -161,9 +166,9 @@ class EmailService:
 
         except Exception as e:
             logger.exception(
-                "email.send_failed",
+                _EVT_EMAIL_SEND_FAILED,
                 extra={
-                    "event": "email.send_failed",
+                    "event": _EVT_EMAIL_SEND_FAILED,
                     "kind": "connection_code",
                     "to_domain": _email_domain(to_email),
                     "error_class": e.__class__.__name__,

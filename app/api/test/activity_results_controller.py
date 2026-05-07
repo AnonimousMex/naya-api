@@ -34,6 +34,9 @@ from app.core.http_response import NayaHttpResponse
 from app.core.logger import logger
 
 
+_EVT_ACTIVITY_RESULT_CREATED = "activity_result.created"
+
+
 class ActivityResultsController:
     def __init__(self, session: Session):
         self.session = session
@@ -78,9 +81,9 @@ class ActivityResultsController:
         if payload.duration_seconds is not None:
             metrics.ACTIVITY_DURATION.observe(payload.duration_seconds)
         logger.info(
-            "activity_result.created",
+            _EVT_ACTIVITY_RESULT_CREATED,
             extra={
-                "event": "activity_result.created",
+                "event": _EVT_ACTIVITY_RESULT_CREATED,
                 "test_id": str(test.id),
                 "child_id": str(payload.child_id),
                 "answers_recorded": recorded,
@@ -95,7 +98,7 @@ class ActivityResultsController:
         # Sentry quota).
         sentry.breadcrumb(
             category="activity",
-            message="activity_result.created",
+            message=_EVT_ACTIVITY_RESULT_CREATED,
             data={
                 "test_id": str(test.id),
                 "child_id": str(payload.child_id),
