@@ -2,9 +2,12 @@ name: 🧪 CI - Backend Tests
 
 on:
   push:
-    branches: ["main", "master", "develop"]
+    # En main/master/develop corre directo. En feature branches también
+    # corre para feedback temprano. PRs cruzados también disparan.
+    branches: ["main", "master", "develop", "feat/**", "fix/**", "chore/**"]
   pull_request:
     branches: ["main", "master", "develop"]
+  workflow_dispatch:
 
 jobs:
   test:
