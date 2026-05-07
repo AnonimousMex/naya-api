@@ -1,0 +1,32 @@
+name: SonarQube Cloud analysis
+
+on:
+  push:
+    branches: [main, develop, stage]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonar:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          # Fetch full history so Sonar puede hacer blame y comparar branches.
+          fetch-depth: 0
+
+      - name: Verify SONAR_TOKEN is reaching the runner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN is missing or empty. Check Settings → Secrets and variables → Actions → Repository secrets. Name must be exactly SONAR_TOKEN."
+            exit 1
+          fi
+          echo "SONAR_TOKEN is set (length=${#SONAR_TOKEN})"
+
+      - name: SonarQube Cloud scan
+        uses: SonarSource/sonarqube-scan-action@13990a695682794b53148ff9f6a8b6e22e43955e  # v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
