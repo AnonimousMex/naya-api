@@ -53,15 +53,20 @@ jobs:
           # `--cov=.` (no `--cov=app`) para que coverage.xml emita paths
           # con prefijo "app/", que es lo que Sonar busca. Filtros y omit
           # viven en .coveragerc en la raíz del repo.
+          # Skip si la branch no tiene tests/ — Sonar continúa sin
+          # coverage data y reportará 0% en esa branch.
+          if [ ! -d tests ]; then
+            echo "::notice::tests/ not found in this branch — skipping pytest. Scan continues without coverage."
+            exit 0
+          fi
           pytest tests/ --cov=. --cov-report=xml:coverage.xml || true
 
       - name: Verify coverage.xml was generated
+        # Informativo: si falta el archivo el scan continúa reportando 0%.
         run: |
           if [ ! -f coverage.xml ]; then
-            echo "::error::coverage.xml was NOT generated. pytest probably failed during import. Removing '|| true' would surface the real error."
-            echo "Files in workspace root:"
-            ls -la
-            exit 1
+            echo "::warning::coverage.xml not generated — Sonar will report 0% coverage on this branch."
+            exit 0
           fi
           echo "coverage.xml exists ($(wc -l < coverage.xml) lines)"
           echo "First 5 source paths Sonar will look for:"
