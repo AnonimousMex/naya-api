@@ -2,9 +2,19 @@ name: 🧪 CI - Backend Tests
 
 on:
   push:
-    branches: ["main", "master", "develop", "feat/**", "fix/**", "chore/**"]
+    branches:
+      [
+        "main",
+        "master",
+        "stage",
+        "develop",
+        "feat/**",
+        "fix/**",
+        "chore/**",
+        "docs/**",
+      ]
   pull_request:
-    branches: ["main", "master", "develop"]
+    branches: ["main", "master", "stage", "develop"]
   workflow_dispatch:
 
 # 4 jobs corren en paralelo + un job final que agrega los resultados.

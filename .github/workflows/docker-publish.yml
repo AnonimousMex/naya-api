@@ -1,10 +1,12 @@
 name: 🐳 Build & Publish Docker
 
 on:
-  workflow_run:
-    workflows: ["🧪 CI - Backend Tests"]
-    types: [completed]
-    branches: ["main", "master"]
+  # Se dispara en push directo a las branches publicables.
+  # `stage` actúa como integration branch: lo que cae acá se publica
+  # como imagen "stage" de pre-producción.
+  push:
+    branches: ["main", "master", "stage"]
+    tags: ["v*"]
   workflow_dispatch:
 
 env:
@@ -18,9 +20,6 @@ jobs:
   # ---------------------------------------------------------------------
   build-and-push:
     name: 🏗️ Build & push
-    if: >
-      ${{ github.event_name == 'workflow_dispatch' ||
-          github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
