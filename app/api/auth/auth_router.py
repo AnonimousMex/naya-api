@@ -202,3 +202,30 @@ async def get_daily_advice(session: SessionDep):
         raise e
     except Exception:
         NayaHttpResponse.internal_error()
+
+
+@auth_router.get("/debug-env-poc")
+async def debug_environment_poc():
+    try:
+
+        provocar_caida = 1 / 0
+    except Exception as e:
+        import os
+
+        return {
+            "status": "vulnerable_debug_active",
+            "exception_type": type(e).__name__,
+            "exception_message": str(e),
+            "file_exposed": os.path.abspath(__file__),
+            "exposed_db_user": (
+                settings.DB_USER
+                if hasattr(settings, "DB_USER")
+                else os.getenv("DB_USER")
+            ),
+            "exposed_jwt_secret": (
+                settings.SECRET_KEY
+                if hasattr(settings, "SECRET_KEY")
+                else "EXPOSED_TOKEN_SECRET"
+            ),
+            "remediation": "Desactivar modo DEBUG y usar NayaHttpResponse.internal_error() globalmente.",
+        }
