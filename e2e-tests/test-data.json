@@ -1,0 +1,24 @@
+{
+  "api": {
+    "baseURL": "http://localhost:8000",
+    "timeout": 30000
+  },
+  "patient": {
+    "email": "patient.test@naya.dev",
+    "password": "TestPassword123!",
+    "confirmPassword": "TestPassword123!",
+    "name": "TestPatient",
+    "newPassword": "NewPass123!@",
+    "newConfirmPassword": "NewPass123!@"
+  },
+  "verification": {
+    "code": "123456",
+    "passwordResetCode": "654321"
+  },
+  "therapist": {
+    "connectionCode": "THERAPIST001"
+  },
+  "profile": {
+    "animalId": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
