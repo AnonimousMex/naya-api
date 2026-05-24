@@ -14,21 +14,24 @@ export class ApiHelper {
       data,
       headers,
     });
-    return {
-      status: response.status(),
-      body: await response.json() as T,
-    };
+    const status = response.status();
+    const text = await response.text();
+    const body = (status === 204 || !text.trim()) ? {} as T : JSON.parse(text) as T;
+    return { status, body };
   }
 
   async postForm<T = any>(endpoint: string, data: Record<string, string>, headers?: Record<string, string>): Promise<{ status: number; body: T }> {
     const response = await this.context.post(`${this.baseURL}${endpoint}`, {
       form: data,
-      headers,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...headers
+      },
     });
-    return {
-      status: response.status(),
-      body: await response.json() as T,
-    };
+    const status = response.status();
+    const text = await response.text();
+    const body = (status === 204 || !text.trim()) ? {} as T : JSON.parse(text) as T;
+    return { status, body };
   }
 
   async put<T = any>(endpoint: string, data: any, headers?: Record<string, string>): Promise<{ status: number; body: T }> {
@@ -36,20 +39,20 @@ export class ApiHelper {
       data,
       headers,
     });
-    return {
-      status: response.status(),
-      body: await response.json() as T,
-    };
+    const status = response.status();
+    const text = await response.text();
+    const body = (status === 204 || !text.trim()) ? {} as T : JSON.parse(text) as T;
+    return { status, body };
   }
 
   async get<T = any>(endpoint: string, headers?: Record<string, string>): Promise<{ status: number; body: T }> {
     const response = await this.context.get(`${this.baseURL}${endpoint}`, {
       headers,
     });
-    return {
-      status: response.status(),
-      body: await response.json() as T,
-    };
+    const status = response.status();
+    const text = await response.text();
+    const body = (status === 204 || !text.trim()) ? {} as T : JSON.parse(text) as T;
+    return { status, body };
   }
 
   async getNoContent(endpoint: string, headers?: Record<string, string>): Promise<{ status: number }> {

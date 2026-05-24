@@ -1,1 +1,64 @@
-@echo off\nREM Nayá API E2E Tests - Quick Start Script for Windows\n\necho ==========================================\necho Nayá API E2E Test Suite - Initialization\necho ==========================================\necho.\n\nREM Check if Node.js is installed\nwhere node >nul 2>nul\nif %ERRORLEVEL% NEQ 0 (\n    echo X Node.js is not installed. Please install it from https://nodejs.org/\n    pause\n    exit /b 1\n)\n\necho + Node.js version:\nnode -v\n\necho.\necho + npm version:\nnpm -v\necho.\n\necho Installing dependencies...\nnpm install\n\nif %ERRORLEVEL% NEQ 0 (\n    echo X Failed to install dependencies\n    pause\n    exit /b 1\n)\n\necho + Dependencies installed successfully\necho.\n\necho Installing Playwright browsers...\ncall npx playwright install\n\nif %ERRORLEVEL% NEQ 0 (\n    echo X Failed to install browsers\n    pause\n    exit /b 1\n)\n\necho + Browsers installed successfully\necho.\n\necho ==========================================\necho Setup completed successfully!\necho ==========================================\necho.\necho Next steps:\necho.\necho 1. Configure test data in test-data.json\necho 2. Start your Nayá API server (http://localhost:8000)\necho 3. Run tests:\necho    npm test              - Run all tests\necho    npm run test:report   - View HTML report\necho    npm run test:debug    - Debug mode\necho    npm run test:headed   - See tests running\necho    npm run test:ui       - Interactive UI mode\necho.\npause\n
+@echo off
+REM Nayá API E2E Tests - Quick Start Script for Windows
+
+echo ==========================================
+echo Nayá API E2E Test Suite - Initialization
+echo ==========================================
+echo.
+
+REM Check if Node.js is installed
+where node >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo X Node.js is not installed. Please install it from https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+echo + Node.js version:
+node -v
+
+echo.
+echo + npm version:
+npm -v
+echo.
+
+echo Installing dependencies...
+npm install
+
+if %ERRORLEVEL% NEQ 0 (
+    echo X Failed to install dependencies
+    pause
+    exit /b 1
+)
+
+echo + Dependencies installed successfully
+echo.
+
+echo Installing Playwright browsers...
+call npx playwright install
+
+if %ERRORLEVEL% NEQ 0 (
+    echo X Failed to install browsers
+    pause
+    exit /b 1
+)
+
+echo + Browsers installed successfully
+echo.
+
+echo ==========================================
+echo Setup completed successfully!
+echo ==========================================
+echo.
+echo Next steps:
+echo.
+echo 1. Configure test data in test-data.json
+echo 2. Start your Nayá API server (http://localhost:8000)
+echo 3. Run tests:
+echo    npm test              - Run all tests
+echo    npm run test:report   - View HTML report
+echo    npm run test:debug    - Debug mode
+echo    npm run test:headed   - See tests running
+echo    npm run test:ui       - Interactive UI mode
+echo.
+pause
