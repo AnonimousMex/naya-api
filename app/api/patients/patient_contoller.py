@@ -59,4 +59,7 @@ class PatientController:
             raise e
 
         except Exception as e:
-            NayaHttpResponse.internal_error(e)
+            import traceback
+            with open("error.log", "a") as f:
+                traceback.print_exc(file=f)
+            NayaHttpResponse.internal_error()

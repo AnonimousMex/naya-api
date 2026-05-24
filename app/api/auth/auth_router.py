@@ -15,7 +15,7 @@ from app.api.auth.auth_schema import (
 
 from app.api.auth.auth_service import AuthService
 from app.constants.user_constants import VerificationModels
-from app.core.auth import LoginFormDataDep, oauth
+from app.core.auth import LoginFormDataDep, oauth, oauth2_access_token
 from app.core.database import SessionDep
 from app.core.settings import settings
 from app.core.http_response import NayaHttpResponse
@@ -194,7 +194,10 @@ async def resend_verification_code(request: ResendCode, session: SessionDep):
 
 
 @auth_router.get("/daily", response_model=AdviceResponse)
-async def get_daily_advice(session: SessionDep):
+async def get_daily_advice(
+    session: SessionDep,
+    token: str = Depends(oauth2_access_token),
+):
     try:
         controller = AuthController(session)
         return await controller.get_daily_advice()

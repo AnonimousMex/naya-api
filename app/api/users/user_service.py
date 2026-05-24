@@ -30,7 +30,10 @@ class UserService:
             session.refresh(new_user)
 
             return new_user
-        except Exception:
+        except Exception as e:
+            import traceback
+            with open("error.log", "a") as f:
+                traceback.print_exc(file=f)
             NayaHttpResponse.internal_error()
 
     @staticmethod

@@ -48,13 +48,23 @@ class EmailService:
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
         except smtplib.SMTPException:
+            import traceback
+            with open("error.log", "a") as f:
+                traceback.print_exc(file=f)
             NayaHttpResponse.internal_error()
 
         except Exception:
+            import traceback
+            with open("error.log", "a") as f:
+                traceback.print_exc(file=f)
             NayaHttpResponse.internal_error()
 
         finally:
-            mail.quit()
+            if 'mail' in locals():
+                try:
+                    mail.quit()
+                except Exception:
+                    pass
 
     @staticmethod
     async def send_conection_code_email(
@@ -94,10 +104,18 @@ class EmailService:
             mail.sendmail(smtp_username, to_email, msg.as_string())
 
         except smtplib.SMTPException:
+            import traceback
+            traceback.print_exc()
             NayaHttpResponse.internal_error()
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             NayaHttpResponse.internal_error()
 
         finally:
-            mail.quit()
+            if 'mail' in locals():
+                try:
+                    mail.quit()
+                except Exception:
+                    pass

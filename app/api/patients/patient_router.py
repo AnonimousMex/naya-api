@@ -29,9 +29,15 @@ async def create_patient(patient_data: PatientCreateSchema, session: SessionDep)
         )
 
     except HTTPException as e:
+        import traceback
+        with open("error.log", "a") as f:
+            traceback.print_exc(file=f)
         raise e
 
     except Exception as e:
+        import traceback
+        with open("error.log", "a") as f:
+            traceback.print_exc(file=f)
         raise e
 
 @patients_router.get(

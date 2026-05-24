@@ -5,6 +5,10 @@ from app.constants.response_codes import NayaResponseCodes
 
 
 async def rate_limiter(request: Request):
+    import os
+    if os.getenv("ENV") in ("development", "test"):
+        return True
+
     client_ip = request.client.host
     key = f"rate_limit:{client_ip}"
     limit = 5
